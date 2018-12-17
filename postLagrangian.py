@@ -1,9 +1,16 @@
 #!/usr/bin/python
-
+# 2018/12/17 14:29:51  zt
 #This python script is made for OpenFOAM lagrangian particle data's post process.
 
 # ------------------What file does I need?--------------------
-# working directory: $CASE_DIR/$TIME/lagrangian/sprayCloud
+# working directory: $CASE_DIR(root_dir)
+#                    └──$Timesteps
+#                       └── lagrangian
+#                           └── sprayCloud
+#                               ├── d
+#                               ├── T
+#                               ├── postions
+#                               └── U
 #             files: d         ----  particles diameter in this time step
 #                    T         ----  particles Temperature 
 #                    positions ----  particles postions (x,y,z) in the unit of 'm'
@@ -11,8 +18,10 @@
 
 # -----------------What statistical data will this script get?-------------
 #  diameter radial profiles in a given plane
-#  velocity radial profiles in a given plane
-#  Temperature raidal profiles in a given plane
+#  velocity radial profiles in a given plane (Mass averaged velocity--correspoding to the General_moments in the Experimental data)
+#  Temperature raidal profiles in a given plane (To be implemented
+#       --Shum-kivan's thesis P.102
+#       --using d^(7/3) mean which is in the form of \bar T_p =\frac{ \Sigma_p T_p d_p^{7/3} }{\Sigma_p d_p^{7/3})
 #  SMD along the stream line
 #  SMD of the whole domain
 
@@ -103,6 +112,8 @@ for time in timeStep:
     # cd into the timeStep dir 
     time_dir = str(time)
     os.chdir(time_dir)
+    # cd into lagrangian data dir
+    os.chdir("lagrangian/sprayCloud/")
 
     read_particle_file('d')
     #read_particle_file('T')
