@@ -63,13 +63,14 @@ def readVector(file):
     f.close()
     return data0, data1, data2
 
-def output_tecplot(tec_file, x, y, z, d, u, v, w, T):
+def output_tecplot(tec_file, x, y, z, d, u, v, w, T, _time):
     # First output the particles data into a tecplot ASCII file
     # The droplets can be seen when 'scatter' is activated
     f = open(tec_file, 'w')
     var_name = "\"X\", \"Y\", \"Z\", \"X Velocity\", \"Y Velocity\", \"Z Velocity\", \"Diameter\", \" Temperature\""
     f.write("Variables = "+var_name+'\n')
-    f.write("Zone T=\" Droplet data \" \n")
+    f.write("Zone T=\" Droplet-" +_time+" \" \n")
+    f.write(" SOLUTIONTIME="+_time+'\n')
 
     for i in range(len(x)):
         #header = str(x[i])+'\t'+str(y[i])+'\t'+str(z[i])+'\t'+str(u[i])+'\t'+str(v[i])+'\t'+str(w[i])+'\t'+str(T[i])+'\t'+str(d[i])+'\n'
@@ -201,7 +202,7 @@ def main():
         # output to tecplot format
         print(' Time '+_time+ 's contains '+str(len(x))+ ' particles.')
         tec_file = 'Tecplot/droplet'+_time+'.plt'
-        output_tecplot(tec_file, x, y, z, d, u, v, w, T)
+        output_tecplot(tec_file, x, y, z, d, u, v, w, T, _time)
 
 if __name__ == '__main__':
     main()
