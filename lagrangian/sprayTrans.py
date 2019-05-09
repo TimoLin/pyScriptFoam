@@ -30,7 +30,7 @@ def getBoundaryPatch(boundary):
     for nStart, line in enumerate(lines):
         if '(' in line:
             break
-    print(nStart)
+
     lines = lines[nStart+1:]
     for n, line in enumerate(lines):
         if "{" in line:
@@ -46,12 +46,6 @@ def parseSprayTransFile(transFile, newTransFile):
     '''
     slightly modify rhoTrans_[liquidPhase] file
     '''
-
-    #cmd = "sed -i -e  '1,22{s/volScalarField::DimensionedInternalField/volScalarField/g}'  "\
-            #"-e '1,22{s/value/internalField/g}'  " \
-            #"-e '1,22{s/sprayCloud://g}'   "+ transFile
-#
-    #os.system(cmd)
 
     f = open(transFile, 'r')
     lines = f.readlines()
