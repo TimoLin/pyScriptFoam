@@ -3,7 +3,11 @@ pyScriptFoam
 My python scripts for OpenFOAM data post-processing.  
 
 # Prerequisites
-
+## Ubuntu
+```
+sudo apt install python3 python3-pip
+sudo pip3 install numpy
+```
 # lagrangian  
 ## ~~postLagrangian.py~~
 ~~A python script to process lagrangian data and get droplets' diameter or velocity radial distributions.~~  
