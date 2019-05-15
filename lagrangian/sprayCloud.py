@@ -79,7 +79,7 @@ def output_tecplot(tec_file, x, y, z, d, u, v, w, T, _time):
         header = str(x[i])+'\t'+str(y[i])+'\t'+str(z[i])+'\t'+str(u[i])+'\t'+str(v[i])+'\t'+str(w[i])+'\t'+str(d[i])+'\t'+str(T[i])+'\n'
         f.write(header)
     f.close()
-    print( ' Finished writting to: '+tec_file)
+    print( '   Finished writting to: '+tec_file)
 
 def rwTecplot(time_list, spray_dir):
     '''
@@ -119,9 +119,12 @@ def rwTecplot(time_list, spray_dir):
             z.extend(z0)
         
         # output to tecplot format
-        print(' Time '+_time+ 's contains '+str(len(x))+ ' particles.')
-        tec_file = 'Tecplot/droplet'+_time+'.plt'
-        output_tecplot(tec_file, x, y, z, d, u, v, w, T, _time)
+        if len(x) > 0:
+            print(' Time '+_time+ 's contains '+str(len(x))+ ' particles.')
+            tec_file = 'Tecplot/droplet'+_time+'.plt'
+            output_tecplot(tec_file, x, y, z, d, u, v, w, T, _time)
+        else:
+            print(' Skipping Time '+_time + ' with no particle!' )
 
     return
 
@@ -162,9 +165,13 @@ def readData(runtime, post_time, spray_dir, direc, axial, r):
             z.extend(z0)
     
     # start post-process
-    print(" Total particles: ", len(x), ".")
-    print(" Post-processing ...")
-    postProcess(direc, x, y, z, d, u, v, w, axial, r)
+    if len(x) > 0:
+        print(" Total particles: ", len(x), ".")
+        print(" Post-processing ...")
+        postProcess(direc, x, y, z, d, u, v, w, axial, r)
+    else:
+        print(" Error: There isn't any particles in your timesteps!")
+        print("   Check it again!")
 
 def postProcess(direc, x, y, z, d, u, v, w, axial, r):
     '''
@@ -392,7 +399,7 @@ def main():
     ## First check 'Are we handling parallel data?'
     if '-parallel' in sys.argv:
         if 'processor1' in pwd:
-            print(" We are parsing parallel data !")
+            print(" We are parsing parallel data. Woopie!")
             # get parallel dirs
             proc_dir = []
             for _dir in pwd:
@@ -463,12 +470,13 @@ def main():
         print(" ** Abort due to lack of runtime data ** ")
         sys.exit()
     else:
-        for _post_time in post_time:
-            if _post_time  not in runtime:
-                print(" Error: It seems Post-time:",_post_time," was not in your solutions! ")
-                print("    Your time list: ", ", ".join(post_time) )
-                print("    Available time list: ", ", ".join(runtime))
-                sys.exit()
+        if '-post' in sys.argv:
+            for _post_time in post_time:
+                if _post_time  not in runtime:
+                    print(" Error: It seems Post-time:",_post_time," was not in your solutions! ")
+                    print("    Your time list: ", ", ".join(post_time) )
+                    print("    Available time list: ", ", ".join(runtime))
+                    sys.exit()
     
     ## Will not reach here if exit
     spray_dir = []
