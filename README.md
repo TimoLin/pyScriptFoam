@@ -4,10 +4,24 @@ My python scripts for OpenFOAM data post-processing.
 
 # Prerequisites
 ## Ubuntu
-```
+```shell
 sudo apt install python3 python3-pip
 sudo pip3 install numpy
 ```
+## CentOS 7  
+Here is a 'SCL' way to install python3 on CentOS 7.
+```shell
+sudo yum install centos-release-scl
+sudo yum install rh-python36
+# enable python3.6 environment in your shell
+## For bash
+scl enable rh-python36 bash 
+## For zsh
+scl enable rh-python36 zsh
+# install numpy
+sudo pip install numpy
+```
+
 # lagrangian  
 ## ~~postLagrangian.py~~
 ~~A python script to process lagrangian data and get droplets' diameter or velocity radial distributions.~~  
