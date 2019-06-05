@@ -66,3 +66,16 @@ python3 sprayTrans.py -liquid <phaseName> [-latestTime] [-parallel] [-help]
 ```
 python3 sprayTrans.py -liquid C2H5OH -latestTime
 ```
+
+# pyPlot
+## Prerequisites  
+```shell
+sudo pip3 install matplotlib
+```
+## pltCourant.py
+Plot Max Courant number.  
+### Usage:
+```
+python3 pltCourant.py -log <log.file>
+```
+ log.file is the OpenFOAM application output  
