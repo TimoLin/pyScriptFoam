@@ -7,6 +7,32 @@ import sys
 import os
 
 
+# Colored printing functions for strings that use universal ANSI escape sequences.
+# fail: bold red, pass: bold green, warn: bold yellow, 
+# info: bold blue, bold: bold white
+
+class ColorPrint:
+
+    @staticmethod
+    def print_fail(message, end = '\n'):
+        sys.stderr.write('\x1b[1;31m' + message.strip() + '\x1b[0m' + end)
+
+    @staticmethod
+    def print_pass(message, end = '\n'):
+        sys.stdout.write('\x1b[1;32m' + message.strip() + '\x1b[0m' + end)
+
+    @staticmethod
+    def print_warn(message, end = '\n'):
+        sys.stderr.write('\x1b[1;33m' + message.strip() + '\x1b[0m' + end)
+
+    @staticmethod
+    def print_info(message, end = '\n'):
+        sys.stdout.write('\x1b[1;34m' + message.strip() + '\x1b[0m' + end)
+
+    @staticmethod
+    def print_bold(message, end = '\n'):
+        sys.stdout.write('\x1b[1;37m' + message.strip() + '\x1b[0m' + end)
+
 def isFloat(x):
     # check whether the string consists of float only
     try:
@@ -16,9 +42,18 @@ def isFloat(x):
         return False
 
 def readScalar(file):
+    fmtError = " Whoops, your OpenFOAM lagragian file is in binary format.\n" \
+              +" Reconstruct it to ASCII format by modifying: \n" \
+              +"   'writeFormat     binary;' to 'writeFormat     ascii;' \n" \
+              +"   in the controlDict"
     data = []
     f = open(file, 'r')
-    lines = f.readlines()
+    try:
+        lines = f.readlines()
+    except UnicodeDecodeError:
+        ColorPrint.print_info(fmtError)
+        ColorPrint.print_fail(" Program terminated due to format error.")
+        sys.exit()
 
     # read particle number
     for line in lines[16:]:
@@ -37,12 +72,23 @@ def readScalar(file):
     return data
 
 def readVector(file):
+
+    fmtError = " Whoops, your OpenFOAM lagragian file is in binary format.\n" \
+              +" Reconstruct it to ASCII format by modifying: \n" \
+              +"   'writeFormat     binary;' to 'writeFormat     ascii;' \n" \
+              +"   in the controlDict"
+
     data0 = []
     data1 = []
     data2 = []
 
     f = open(file, 'r')
-    lines = f.readlines()
+    try:
+        lines = f.readlines()
+    except UnicodeDecodeError:
+        ColorPrint.print_info(fmtError)
+        ColorPrint.print_fail(" Program terminated due to format error.")
+        sys.exit()
 
     # read particle number
     for line in lines[16:]:
@@ -382,10 +428,12 @@ def config_parser(config):
 def main():
     help = " Usage:\n" \
         + "   python3 sprayCloud.py [-parallel] [-latestTime] [-post] [-help]\n" \
-        + "     -parallel:    process the parallel data\n" \
-        + "     -latestTime:  only process the latestTime solution\n" \
-        + "     -post:        post-process the droplet data\n" \
-        + "     -help:        print this message\n"
+        + "     Convert Lagrangian data to Tecplot format or do Post-Process\n"  \
+        + "     Arguments:\n" \
+        + "       -parallel:    process the parallel data\n" \
+        + "       -latestTime:  only process the latestTime solution\n" \
+        + "       -post:        post-process the droplet data\n" \
+        + "       -help:        print this message\n"
     if '-help' in sys.argv:
         print(help)
         sys.exit()
