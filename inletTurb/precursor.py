@@ -111,14 +111,14 @@ def main():
     for i in range(steps):
         srcTime = startTime+dt*i
         # source file
-        srcFile = src+'/'+str(format(srcTime,'.7f')).rstrip("0")+'/'+surface+'/vectorField/U'
+        srcFile = src+'/'+str(format(srcTime,'.7f')).rstrip("0.")+'/'+surface+'/vectorField/U'
 
         f = open(srcFile, "r")
         lines = f.readlines()
         f.close()
         
         # destination file
-        dstDir = dst+'/'+str(format(srcTime-startTime+outputTime,'.7f')).rstrip("0")
+        dstDir = dst+'/'+str(format(srcTime-startTime+outputTime,'.7f')).rstrip("0.")
         if not os.path.exists(dstDir):
             os.makedirs(dstDir)
         dstFile = dstDir+"/U"
@@ -148,7 +148,7 @@ def main():
             print(i,": ",format(srcTime,'.7f'), " -> ", dstFile[dstFile.find(patch):])
 
     # points file. In this case we use 'points' file
-    srcFile = src+'/'+str(format(srcTime,'.7f')).rstrip("0")+'/'+surface+'/points'
+    srcFile = src+'/'+str(format(srcTime,'.7f')).rstrip("0.")+'/'+surface+'/points'
     dstFile = dst+"/points"
 
     f = open(srcFile,'r') 
