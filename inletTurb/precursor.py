@@ -31,6 +31,7 @@ def main():
 
         # Required values
         src = config['base']['src']
+        surface = config['base']['surface']
         dt = float(config['base']['dt'])
         startTime = float(config['base']['startTime'])
         outputTime = float(config['base']['outputTime'])
@@ -73,6 +74,7 @@ def main():
     # output these parameters 
     print("sourceDir:", src)
     print("outputDir:", dst)
+    print("samplingSurface:", surface)
     print("Vecotr convert:", "(x,y,z) -> ", vector, conv)
     print("Time step:", dt)
     print("Source start time:", startTime)
@@ -108,13 +110,14 @@ def main():
     steps = steps+1
     for i in range(steps):
         srcTime = startTime+dt*i
-        # need to be adapt for different surface "xD04"
-        srcFile = src+'/'+str(format(srcTime,'.7f')).rstrip("0")+'/xD04/vectorField/U'
+        # source file
+        srcFile = src+'/'+str(format(srcTime,'.7f')).rstrip("0")+'/'+surface+'/vectorField/U'
 
         f = open(srcFile, "r")
         lines = f.readlines()
         f.close()
-
+        
+        # destination file
         dstDir = dst+'/'+str(format(srcTime-startTime+outputTime,'.7f')).rstrip("0")
         if not os.path.exists(dstDir):
             os.makedirs(dstDir)
@@ -145,7 +148,7 @@ def main():
             print(i,": ",format(srcTime,'.7f'), " -> ", dstFile[dstFile.find(patch):])
 
     # points file. In this case we use 'points' file
-    srcFile = src+'/'+str(format(srcTime,'.7f')).rstrip("0")+'/xD04/points'
+    srcFile = src+'/'+str(format(srcTime,'.7f')).rstrip("0")+'/'+surface+'/points'
     dstFile = dst+"/points"
 
     f = open(srcFile,'r') 
