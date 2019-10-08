@@ -5,7 +5,6 @@
 import sys
 import os
 
-import matplotlib.pyplot as plt
 
 help_msg = 'Usgage:\n  python3 pltCourant.py -log <log.file>'
 
@@ -15,6 +14,8 @@ else:
     print(help_msg)
     sys.exit()
 
+import matplotlib.pyplot as plt
+
 f = open(log_file, 'r')
 lines = f.readlines()
 
@@ -22,10 +23,10 @@ time = []
 co = []
 
 for n, line in enumerate(lines):
-    if 'Courant Number mean' in line and 'Time' in lines[n+1]:
-        time.append(float(lines[n+1].split()[-1]))
-        temp = float(line.split()[-1])
-        co.append(temp)
+    if 'Courant Number mean' in line:
+        co.append(float(line.split()[-1]))
+    if 'Time =' == line[0:6]:
+        time.append(float(line.split()[-1]))
 
 plt.plot(time, co, 'b')
 plt.xlabel("Time(s)")
