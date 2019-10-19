@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Convert FlameMaster Laminar Flamelet Solutions to Cantera CSV format
@@ -103,12 +103,19 @@ def writeCSV(fname,fm):
     f.close()
     
 def main():
+    
+    help = " Usage:\n" \
+          +"   python3 fm2Cantera.py -dir <FM-Solution-dir>"
+
     if_list = []
     of_list = []
-
+    
     if '-dir' in sys.argv:
         f_dir = sys.argv[sys.argv.index('-dir')+1]
         f_list = os.listdir(f_dir)
+    else:
+        print(help)
+        sys.exit()
 
     os.chdir(f_dir)
     
@@ -119,8 +126,18 @@ def main():
             fms.append(flamelet())
             readFM(fname, fms[-1])
     os.chdir('../')
+    
+    outputDir = 'tables'
+
+    if os.path.exists(outputDir):
+        if os.listdir(outputDir):
+            print(" Output Folder '"+ outputDir+"' is not empty!\n It's better to clean it up. \n Abort!")
+            sys.exit()
+    else:
+        os.makedirs(outputDir)
+    
     for n in range(len(fms)):
-        fname = 'Table_'+str(fms[n].chi_st)+'.csv'
+        fname = outputDir + '/'+'Table_'+str(fms[n].chi_st)+'.csv'
         writeCSV(fname, fms[n])
 
     # get chi order 

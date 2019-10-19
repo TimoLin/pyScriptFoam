@@ -1,3 +1,5 @@
+# /usr/bin/env python3
+
 import sys
 import os
 class flamelet():
@@ -117,18 +119,39 @@ def calcHs(fm, chi, Hs):
         print('Cant find Hs for ', fm.chi_st, ' -to- ', _chi)
 
 def main():
+
+    help = " Usage:\n "\
+          +"   python3 hsJanaf.py -dir <FM-Solutions-Dir> -log <canteraToFoam-Log-File>\n"
+
     if '-dir' in sys.argv:
         f_dir = sys.argv[sys.argv.index('-dir')+1]
         f_list = os.listdir(f_dir)
         for n in range(len(f_list)):
             f_list[n] = f_dir+'/'+f_list[n]
+    else:
+        print(" -dir Error!")
+        print(help)
+        sys.exit()
+    if '-log' in sys.argv:
+        foamlog = sys.argv[sys.argv.index('-log')+1]
+    else:
+        print(" -log Error!")
+        print(help)
+        sys.exit()
+
 
     #os.chdir(f_dir)
     fms = []
     
     outdir = 'HsJanaf'
+    
+    if os.path.exists(outdir):
+        if os.listdir(outdir):
+            print(" Output Folder '"+outdir+"' is not empty.\n It's better to clean it up. \n Abort!" )
+            sys.exit()
+    else:
+        os.makedirs(oudir)
 
-    foamlog = 'log'
     f = open(foamlog, 'r')
     lines = f.readlines()
     f.close()
@@ -150,6 +173,6 @@ def main():
         calcHs(fms[-1], chi, Hs)
         outputFM(outdir, f_dir, fname, fms[-1])
 
-       
+    print(" Done!")   
 if __name__ == '__main__':
     main()
