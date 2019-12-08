@@ -150,7 +150,7 @@ def main():
             print(" Output Folder '"+outdir+"' is not empty.\n It's better to clean it up. \n Abort!" )
             sys.exit()
     else:
-        os.makedirs(oudir)
+        os.makedirs(outdir)
 
     f = open(foamlog, 'r')
     lines = f.readlines()
