@@ -125,9 +125,14 @@ def main():
 
     if '-dir' in sys.argv:
         f_dir = sys.argv[sys.argv.index('-dir')+1]
-        f_list = os.listdir(f_dir)
-        for n in range(len(f_list)):
-            f_list[n] = f_dir+'/'+f_list[n]
+        f_list = []
+        for temp in os.listdir(f_dir):
+            try:
+                temp.index("_") # for files not the flamelet solutions
+                if "noC" not in temp:
+                   f_list.append(f_dir+'/'+temp)
+            except ValueError:
+                pass
     else:
         print(" -dir Error!")
         print(help)
