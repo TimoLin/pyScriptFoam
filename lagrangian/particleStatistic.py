@@ -127,10 +127,17 @@ def process(plane, variables, data):
         if nParticle[-1] > 0:
             mean_d10 = d1/nParticle[-1]
             mean_d32 = d3/d2
+        else:
+            mean_d10 = 0.0
+            mean_d32 = 0.0
         for n in range(len(UaGroup)):
             if nParticle[n] >0:
                 UaGroup[n] /= mGroup[n]
                 UrGroup[n] /= mGroup[n]
+            else:
+                UaGroup[n] = 0.0
+                UrGroup[n] = 0.0
+
 
         d_Profile.append(mean_d10)
         d32_Profile.append(mean_d32)
@@ -150,12 +157,12 @@ def process(plane, variables, data):
         header += '"nP'+str(d)+'",'
     header += '"nP"'
 
-    line = 'variables="r","d","d32",'+header+'\n'
+    line = 'variables="r/D","d","d32",'+header+'\n'
     f.write(line)
     line = 'zone t="'+plane+'"\n'
     f.write(line)
     for n in range(len(rData)):
-        line = data2line([rData[n],d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
+        line = data2line([rData[n]/10.5,d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
              + data2line(Ua_Profile[n]) \
              + data2line(Ur_Profile[n]) \
              + data2line(nP_Profile[n])
@@ -163,6 +170,7 @@ def process(plane, variables, data):
     f.close()
 
 def main():
+
     
     pwd = os.listdir()
 
