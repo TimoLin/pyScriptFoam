@@ -73,9 +73,9 @@ Post-Processing sampled Lagrangian data from CloudFunction:ParticleStatistic
 ```
 python3 particleStatistic.py [-help] [-process] [-pdf]
 ```
-  -process: Post-process sampled lagrangian data and get radial profiles
-  -pdf:     Get droplete droplet size PDF and volume PDF for sampled planes
-  -help:    Print this message
+  -process: Post-process sampled lagrangian data and get radial profiles  
+  -pdf:     Get droplete droplet size PDF and volume PDF for sampled planes  
+  -help:    Print this message  
 
 # pyPlot
 ## Prerequisites  
