@@ -50,6 +50,11 @@ def loc(dlist,d):
         if d > dlist[n-1] and d<=dlist[n]:
             return n
 
+def cylinder(x1,x2,Ux1,Ux2):
+    theta = np.arctan2(x2,x1)
+    Ur = Ux1*np.cos(theta)+Ux2*np.sin(theta)
+
+
 def readData(file):
 
     f = open(file,'r')
@@ -67,6 +72,57 @@ def readData(file):
         subdata.append(dataLine)
 
     return variables, subdata
+
+def writeScatter(plane, variables, data):
+
+    indx = variables.index("Px")
+    indy = variables.index("Py")
+    indz = variables.index("Pz")
+    ind_nP = variables.index("nParticle")
+    ind_d = variables.index("d")
+    ind_Ux = variables.index("Ux")
+
+    f = open('./postProcessing/'+plane+'-scatter.dat','w')
+    line = "Variables='x','y','z','d'\n"
+    f.write(line)
+    for p in data:
+        line = str(p[indx])+"\t"+str(p[indy])+'\t'+str(p[indz])+"\t"+str(p[ind_d])+"\n"
+        f.write(line)
+    f.close()
+    return
+
+def dropletSizePDF(plane, variables, data):
+
+    ind_np = variables.index("nParticle")
+    ind_d = variables.index("d")
+    
+    # Will be adjusted for user defined parameters
+    dStep = 5
+    dGroup = list(range(0,85,5)) # in um
+
+    PSD = [0.0]*len(dGroup) # Particle size distributions, PSD or counts PDF
+    PDF = [0.0]*len(dGroup) # Volume probability density funciton
+
+    for p in data:
+        for n, d in enumerate(dGroup):
+            d1 = (d - dStep/2.0)/(10**6)
+            d2 = (d + dStep/2.0)/(10**6)
+            if (p[ind_d] >= d1) and (p[ind_d] < d2):
+                PSD[n] += p[ind_np]
+                PDF[n] += p[ind_d]**3.0 * p[ind_np]
+
+    # Normalize
+    PSD /= np.sum(PSD)
+    PDF /= np.sum(PDF)
+
+    f = open('./postProcessing/'+plane+'-pdf.dat','w')
+    line = 'Variables="d", "Counts PDF", "Volume PDF"\n'
+    f.write(line)
+    for n in range(len(dGroup)):
+        line = str(dGroup[n])+"\t"+str(PSD[n])+"\t"+str(PDF[n])+"\n"
+        f.write(line)
+    f.close()
+
 
 def process(plane, variables, data):
 
@@ -171,13 +227,36 @@ def process(plane, variables, data):
 
 def main():
 
+    help = "python3 particleStatistic.py [-help] [-process] [-pdf]\n" \
+            "  -process: Post-process sampled lagrangian data and get radial profiles\n" \
+            "  -pdf:     Get droplete droplet size PDF and volume PDF for sampled planes\n" \
+            "  -help:    Print this message"
+    if "-help" in sys.argv:
+        print(help)
+        sys.exit()
     
+    if "-process" in sys.argv:
+        flagProcess = True
+    else:
+        flagProcess = False
+
+    if "-pdf" in sys.argv:
+        flagPdf = True
+    else:
+        flagPdf = False
+    
+    if (not flagProcess) and (not flagPdf):
+        print(" It seems that you didn't give me any flags\n")
+        print(help)
+        sys.exit()
+
+
     pwd = os.listdir()
 
     # The 'sprayCloud' may be different
     cloud = './postProcessing/lagrangian/sprayCloud/'
     if 'postProcessing' not in pwd:
-        print("Error")
+        print("Fatal Error: Can't find 'postProcessing' in current folder!" )
         sys.exit()
 
     planes = os.listdir(cloud)
@@ -192,8 +271,12 @@ def main():
             data.extend(subdata)
             #print(time)
 
-        process(plane, var,data)
-        print(plane)
+        if (flagProcess):
+            process(plane, var,data)
+        if (flagPdf):
+            dropletSizePDF(plane, var, data)
+
+        print("Done post-processing: ",plane)
 
 if __name__ == '__main__':
     main()
