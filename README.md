@@ -67,6 +67,16 @@ python3 sprayTrans.py -liquid <phaseName> [-latestTime] [-parallel] [-help]
 python3 sprayTrans.py -liquid C2H5OH -latestTime
 ```
 
+## particleStatistic.py
+Post-Processing sampled Lagrangian data from CloudFunction:ParticleStatistic  
+### Usage:
+```
+python3 particleStatistic.py [-help] [-process] [-pdf]
+```
+  -process: Post-process sampled lagrangian data and get radial profiles
+  -pdf:     Get droplete droplet size PDF and volume PDF for sampled planes
+  -help:    Print this message
+
 # pyPlot
 ## Prerequisites  
 ```shell
