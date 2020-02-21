@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-convert FlameMaster Solution Enthalpy to Sensible Enthalpy
+Convert FlameMaster Solution Enthalpy to Sensible Enthalpy
+by using Cantera.
 """
 
 import sys
@@ -87,14 +88,14 @@ def readFM(fname, fm):
     # end up here, don't need the rest part
     f.close()
 
-def calcHs(fm):
-    gas = ct.Solution('gri30.cti')
+def calcHs(gas, fm):
+    #gas = ct.Solution(ct_input)
 
     n_grid = len(fm.data[0])
 
-    _ht = []
-    _hf = []
-    _hs = []
+    _ht = [] # Total enthalpy
+    _hf = [] # Formation/Chemical enthalpy
+    _hs = [] # Sensible enthalpy
     for grid in range(n_grid):
         Yi = []
         for n in range(fm.nSpecies):
@@ -139,24 +140,59 @@ def outputFM(outdir, f_dir, fname, fm):
 
 
 def main():
+
+    help = " Usage:\n" \
+          +"   python3 hsNasa.py -dir <FM-Solution-dir> -cti <Cantera-input-file>"
+    
+    if '-h' in sys.argv or '--help' in sys.argv:
+        print(help)
+        sys.exit()
+
     if '-dir' in sys.argv:
         f_dir = sys.argv[sys.argv.index('-dir')+1]
         f_list = os.listdir(f_dir)
         for n in range(len(f_list)):
             f_list[n] = f_dir+'/'+f_list[n]
+    else:
+        print(" Error!\n  FM solutions folder shall be given!")
+        print(help)
+        sys.exit()
+        
 
-    #os.chdir(f_dir)
+    if '-cti' in sys.argv:
+        ct_input = sys.argv[sys.argv.index('-cti')+1]
+    else:
+        print(" Error!\n  Cantera input file shall be given!\n  Use 'ck2cti' to convert chemkin files to Cantera format.")
+        print(help)
+        sys.exit()
+
+    # Check output Dir
+    outputDir = 'HsNasa'
+    if os.path.exists(outputDir):
+        if os.listdir(outputDir):
+            print(" Output Folder '"+outputDir+"' is not emmpty!\n It's better to clean it up.\n Abort")
+            sys.exit()
+    else:
+        os.makedirs(outputDir)
+
+    # Read FM solutions to fms
     fms = []
-    
-    outdir = 'Hs'
+    fname_list = []
 
     for fname in f_list:
-        fms.append(flamelet())
-        readFM(fname, fms[-1])   
-        calcHs(fms[-1])
-        outputFM(outdir, f_dir, fname, fms[-1])
+        if 'chi' in fname:
+            fms.append(flamelet())
+            readFM(fname,fms[-1])
+            # Kick out non-solution files 
+            fname_list.append(fname)
+
+    gas = ct.Solution(ct_input)
+    for n,flame in enumerate(fms):
+        calcHs(gas, flame)
+        outputFM(outputDir, f_dir, fname_list[n], flame)
 
     #os.chdir('../')
+    print(' Done!')
     
 if __name__ == '__main__':
     main()
