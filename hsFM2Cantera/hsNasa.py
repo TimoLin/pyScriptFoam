@@ -20,6 +20,8 @@ class flamelet():
         self.data.append(_data)
     def readChi(self, _chi):
         self.chi_st = _chi
+    def readP(self, _P):
+        self.P = _P
     def setHs(self, _hs):
         self.hs = _hs
     def setNspecise(self, n):
@@ -31,6 +33,12 @@ def readFM(fname, fm):
 
     # no use header lines
     line = f.readline()
+    while ('pressure' not in line):
+        line = f.readline()
+   
+    P = float(line.split()[2]) # in bar
+    fm.readP(P)
+
     while ('chi_st' not in line):
         line = f.readline()
    
@@ -101,9 +109,9 @@ def calcHs(gas, fm):
         for n in range(fm.nSpecies):
             Yi.append(float(fm.data[n+2][grid]))
         gas.set_unnormalized_mass_fractions(Yi)
-        gas.TP = float(fm.data[1][grid]), 1e5
+        gas.TP = float(fm.data[1][grid]), fm.P*ct.one_atm
         _ht.append(gas.enthalpy_mass)
-        gas.TP = 298.15, 1e5
+        gas.TP = 298.15, fm.P*ct.one_atm
         _hf.append(gas.enthalpy_mass)
 
     for n in range(n_grid):
