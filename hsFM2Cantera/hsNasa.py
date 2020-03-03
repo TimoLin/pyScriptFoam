@@ -33,13 +33,19 @@ def readFM(fname, fm):
 
     # no use header lines
     line = f.readline()
+    while ('title' not in line):
+        line = f.readline()
+    flame = line.split('"')[1]
+
     while ('pressure' not in line):
         line = f.readline()
    
     P = float(line.split()[2]) # in bar
     fm.readP(P)
 
-    while ('chi_st' not in line):
+    # chi_ref: Transient flamelet
+    # chi_st : Steady flamelet
+    while ('chi_st' not in line and 'chi_ref' not in line):
         line = f.readline()
    
     chi_st = float(line.split()[2])
@@ -70,6 +76,11 @@ def readFM(fname, fm):
 
     # Variable name Temperature
     line = f.readline()
+    if 'zeta' in line:
+        # transient flame data
+        for n in range( int(n_grid/5) + 1):
+            line = f.readline()
+        line = f.readline()   
     fm.readName('T')
     data = []
     for n in range( int(n_grid/5) + 1):
@@ -119,8 +130,8 @@ def calcHs(gas, fm):
 
     fm.setHs(_hs)
 
-def outputFM(outdir, f_dir, fname, fm):
-    f = open(fname, 'r')
+def outputFM(outdir,flamelet_name, fname, fm):
+    f = open(flamelet_name, 'r')
     lines = f.readlines()
     f.close()
 
@@ -140,8 +151,7 @@ def outputFM(outdir, f_dir, fname, fm):
             ind += 1
             line = ''
 
-    fname = fname.replace(f_dir,'')
-    f = open(outdir+fname, 'w')
+    f = open(outdir+'/'+fname, 'w')
     f.writelines(lines)
     f.close()
 
@@ -150,17 +160,22 @@ def outputFM(outdir, f_dir, fname, fm):
 def main():
 
     help = " Usage:\n" \
-          +"   python3 hsNasa.py -dir <FM-Solution-dir> -cti <Cantera-input-file>"
+          +"   python3 hsNasa.py -dir/-rootdir <FM-Solution-dir> -cti <Cantera-input-file>"
     
     if '-h' in sys.argv or '--help' in sys.argv:
         print(help)
         sys.exit()
 
     if '-dir' in sys.argv:
-        f_dir = sys.argv[sys.argv.index('-dir')+1]
-        f_list = os.listdir(f_dir)
-        for n in range(len(f_list)):
-            f_list[n] = f_dir+'/'+f_list[n]
+        #f_dir = sys.argv[sys.argv.index('-dir')+1]
+        #f_list = os.listdir(f_dir)
+        #for n in range(len(f_list)):
+            #f_list[n] = f_dir+'/'+f_list[n]
+        f_root_dir = ''
+        f_dirs = sys.argv[sys.argv.index('-dir')+1]
+    elif '-rootdir' in sys.argv:
+        f_root_dir = sys.argv[sys.argv.index('-rootdir')+1]
+        f_dirs = os.listdir(f_root_dir)
     else:
         print(" Error!\n  FM solutions folder shall be given!")
         print(help)
@@ -175,29 +190,55 @@ def main():
         sys.exit()
 
     # Check output Dir
-    outputDir = 'HsNasa'
-    if os.path.exists(outputDir):
-        if os.listdir(outputDir):
-            print(" Output Folder '"+outputDir+"' is not emmpty!\n It's better to clean it up.\n Abort")
+    outRootDir = 'HsNasa'
+    if os.path.exists(outRootDir):
+        if os.listdir(outRootDir):
+            print(" Output Folder '"+outRootDir+"' is not emmpty!\n It's better to clean it up.\n Abort")
             sys.exit()
     else:
-        os.makedirs(outputDir)
+        os.makedirs(outRootDir)
+
+    
+    # Create Cantera case
+    gas = ct.Solution(ct_input)
 
     # Read FM solutions to fms
-    fms = []
-    fname_list = []
-
-    for fname in f_list:
-        if 'chi' in fname:
-            fms.append(flamelet())
-            readFM(fname,fms[-1])
-            # Kick out non-solution files 
-            fname_list.append(fname)
-
-    gas = ct.Solution(ct_input)
-    for n,flame in enumerate(fms):
-        calcHs(gas, flame)
-        outputFM(outputDir, f_dir, fname_list[n], flame)
+    
+    if f_root_dir == '':
+        # only steady solutions exist
+        for fname in os.listdir(f_dirs):
+            if 'chi' in fname:
+                flamelet_name = f_dirs+'/'+fname
+                fms = flamelet()
+                readFM(fname,fms)
+                calcHs(gas,flame)
+                outputFM(outRootDir,flamelet_name, fname, fms)
+    else:
+        for f_dir in f_dirs:
+            # Create output folder
+            outputDir = outRootDir+'/'+f_dir
+            try:
+                os.makedirs(outputDir)
+            except FileExistsError:
+                pass
+            if 'Chi-' in f_dir:
+                # Transient Flamelets
+                for fname in os.listdir(f_root_dir+'/'+f_dir):
+                    if 'ms.tout' in fname:
+                        flamelet_name = f_root_dir+'/'+f_dir+'/'+fname
+                        fms = flamelet()
+                        readFM(flamelet_name, fms)
+                        calcHs(gas,fms)
+                        outputFM(outputDir,flamelet_name, fname, fms)
+            else:
+                # Steady Flamelets
+                for fname in os.listdir(f_root_dir+'/'+f_dir):
+                    if 'chi' in fname:
+                        flamelet_name = f_root_dir+'/'+f_dir+'/'+fname
+                        fms = flamelet()
+                        readFM(flamelet_name,fms)
+                        calcHs(gas,fms)
+                        outputFM(outputDir,flamelet_name, fname, fms)
 
     #os.chdir('../')
     print(' Done!')
