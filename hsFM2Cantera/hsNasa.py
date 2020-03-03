@@ -210,8 +210,8 @@ def main():
             if 'chi' in fname:
                 flamelet_name = f_dirs+'/'+fname
                 fms = flamelet()
-                readFM(fname,fms)
-                calcHs(gas,flame)
+                readFM(flamelet_name,fms)
+                calcHs(gas,fms)
                 outputFM(outRootDir,flamelet_name, fname, fms)
     else:
         for f_dir in f_dirs:
