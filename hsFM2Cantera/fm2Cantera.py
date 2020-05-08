@@ -137,7 +137,7 @@ def main():
         os.makedirs(outputDir)
     
     for n in range(len(fms)):
-        fname = outputDir + '/'+'Table_'+str(fms[n].chi_st)+'.csv'
+        fname = outputDir + '/'+'Table_'+'{:g}'.format(fms[n].chi_st)+'.csv'
         writeCSV(fname, fms[n])
 
     # get chi order 
