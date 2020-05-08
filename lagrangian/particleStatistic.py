@@ -32,6 +32,12 @@ def data2line(data):
     #line += '\n'
     return line
 
+def data2lineCSV(data):
+    line = ''
+    for temp in data:
+        line += str(temp)+','
+    return line
+
 def radial(rEnd):
     #rStep = 0.2 #mm
     r = []
@@ -200,7 +206,38 @@ def process(plane, variables, data):
         Ua_Profile.append(UaGroup)
         Ur_Profile.append(UrGroup)
         nP_Profile.append(nParticle)
+    if '-csv' in sys.argv:
+        writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile)
 
+    if '-tecplot' in sys.argv:
+        writeTecplot(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile)
+
+def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile):
+    f = open('./postProcessing/'+plane+'.csv','w')
+    header = 'r/D,d,d32,'
+    for d in dGroup:
+        header += 'Ua-d'+str(d)+','
+    header += 'Ua-dall,'
+    for d in dGroup:
+        header += 'Ur-d'+str(d)+','
+    header += 'Ur-dall,'
+    for d in dGroup:
+        header += 'nP-d'+str(d)+','
+    header += 'nP-dall'
+
+    f.write(header+"\n")
+
+    for n in range(len(rData)):
+        line = data2lineCSV([rData[n]/10.5,d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
+             + data2lineCSV(Ua_Profile[n]) \
+             + data2lineCSV(Ur_Profile[n]) \
+             + data2lineCSV(nP_Profile[n])
+        line = line[:-1]
+        f.write(line+'\n')
+    f.close()
+    
+
+def writeTecplot(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile):
     f = open('./postProcessing/'+plane+'.dat','w')
     header = ''
     for d in dGroup:
@@ -227,7 +264,7 @@ def process(plane, variables, data):
 
 def main():
 
-    help = "python3 particleStatistic.py [-help] [-process] [-pdf]\n" \
+    help = "python3 particleStatistic.py [-help] [-process] [-pdf] [-csv] [-tecplot]\n" \
             "  -process: Post-process sampled lagrangian data and get radial profiles\n" \
             "  -pdf:     Get droplete droplet size PDF and volume PDF for sampled planes\n" \
             "  -help:    Print this message"
