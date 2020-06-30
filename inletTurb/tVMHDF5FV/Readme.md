@@ -33,6 +33,7 @@ cd latest/bin
 Set `hdf5` path in `.zshrc` or `.bashrc`:
 ```sh
 export HDF5_DIR=$HOME/software/hdf5/latest
+export LD_LIBRARY_PATH=$HDF5_DIR/lib:$LD_LIBRARY_PATH
 ```
 ## How to use
 ### 1. Show help message
