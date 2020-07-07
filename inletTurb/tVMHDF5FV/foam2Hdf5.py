@@ -7,7 +7,7 @@ from mpi4py import MPI
 from readers import read_structured_points_foamfile
 from readers import read_structured_velocity_foamfile
 import argparse
-
+import time
 
 
 def main():
@@ -56,6 +56,8 @@ def main():
     normVec = np.array([int(normal[0]), int(normal[1]),int(normal[2])])
     loc= float(args.location)
 
+# start timestamp
+    start_time = time.time()
 
 # Case root dir, postProcessing dir, "surfaceSampling" or "sampledSurface"
     dataDir = os.path.join( precursorCaseDir, "postProcessing",
@@ -93,7 +95,8 @@ def main():
     velocity = dbFile.create_dataset("velocity",(len(times),nPoints,3),
                                         dtype=np.float64)
 
-    print(nPoints)
+    print("Sampled data contains:",nPoints,"points")
+    
 
     dbFile.attrs["nPoints"] = nPoints
 
@@ -115,7 +118,10 @@ def main():
 
     dbFile.close()
 
-    print("Done")
+# end timestamp
+    end_time = time.time()
+
+    print("Done! Execution time: %.2f s."%(end_time-start_time))
 
 if __name__ == "__main__":
     main()
