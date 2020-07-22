@@ -4,6 +4,7 @@
 # Post-Processing sampled Lagrangian data from CloudFunction:ParticleStatistic.
 
 import numpy as np
+import argparse
 import sys
 import os
 
@@ -173,16 +174,20 @@ def process(plane, variables, data):
                 d1 += p[ind_nP]*p[ind_d]
                 d2 += p[ind_nP]*np.power(p[ind_d],2.0)
                 d3 += p[ind_nP]*np.power(p[ind_d],3.0)
- 
 
                 dGroupLoc = loc(dGroup, p[ind_d]*np.power(10,6))
                 if (dGroupLoc != -1):
                     UaGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*p[ind_Ux]
-                    UrGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*(np.sqrt(p[ind_Ux+1]**2.0+p[ind_Ux+2]**2.0))
+                    UrGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*(
+                            # See issue #1 for more information
+                            (p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/r
+                            )
                     mGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)
                     nParticle[dGroupLoc] += p[ind_nP]
                 UaGroup[-1] +=  p[ind_nP]*np.power(p[ind_d],3.0)*p[ind_Ux]
-                UrGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)*(np.sqrt(p[ind_Ux+1]**2.0+p[ind_Ux+2]**2.0))
+                UrGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)*(
+                            (p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/r
+                            )
                 mGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)
                 nParticle[-1] += p[ind_nP]
  
