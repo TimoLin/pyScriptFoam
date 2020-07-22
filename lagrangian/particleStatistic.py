@@ -8,7 +8,7 @@ import argparse
 import sys
 import os
 
-rStep = 0.5
+rStep = 0.5 #mm
 
 dGroup = [10,20,30,40,50]#um
 
@@ -40,12 +40,13 @@ def data2lineCSV(data):
     return line
 
 def radial(rEnd):
-    #rStep = 0.2 #mm
-    r = []
+    # in mm
+    r = np.array([])
     if (int(rEnd/rStep) > 0):
         n = int(rEnd/rStep)+1
+        r = np.zeros(n)
         for i in range(n):
-            r.append(0.0+rStep*i)
+            r[i] = 0.0+rStep*i
     return r
 
 def loc(dlist,d):
@@ -100,6 +101,7 @@ def writeScatter(plane, variables, data):
 
 def dropletSizePDF(plane, variables, data):
 
+
     ind_np = variables.index("nParticle")
     ind_d = variables.index("d")
     
@@ -132,6 +134,12 @@ def dropletSizePDF(plane, variables, data):
 
 
 def process(plane, variables, data):
+
+    args = getArgs()
+
+    d_ref = args.diameter
+    flagCsv = args.csv
+    flagTec = args.tecplot
 
     indx = variables.index("Px")
     indy = variables.index("Py")
@@ -211,11 +219,12 @@ def process(plane, variables, data):
         Ua_Profile.append(UaGroup)
         Ur_Profile.append(UrGroup)
         nP_Profile.append(nParticle)
-    if '-csv' in sys.argv:
-        writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile)
 
-    if '-tecplot' in sys.argv:
-        writeTecplot(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile)
+    if flagCsv:
+        writeCSV(plane, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile)
+
+    if flagTec:
+        writeTecplot(plane, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile)
 
 def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile):
     f = open('./postProcessing/'+plane+'.csv','w')
@@ -233,7 +242,7 @@ def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Pr
     f.write(header+"\n")
 
     for n in range(len(rData)):
-        line = data2lineCSV([rData[n]/10.5,d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
+        line = data2lineCSV([rData[n],d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
              + data2lineCSV(Ua_Profile[n]) \
              + data2lineCSV(Ur_Profile[n]) \
              + data2lineCSV(nP_Profile[n])
@@ -260,36 +269,55 @@ def writeTecplot(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, n
     line = 'zone t="'+plane+'"\n'
     f.write(line)
     for n in range(len(rData)):
-        line = data2line([rData[n]/10.5,d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
+        line = data2line([rData[n],d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
              + data2line(Ua_Profile[n]) \
              + data2line(Ur_Profile[n]) \
              + data2line(nP_Profile[n])
         f.write(line+'\n')
     f.close()
 
-def main():
+def getArgs():
+    # Define the command-line arguments
+    parser = argparse.ArgumentParser(
+                description = "Post-Processing sampled Lagrangian data from CloudFunction:ParticleStatistic."
+                )
 
-    help = "python3 particleStatistic.py [-help] [-process] [-pdf] [-csv] [-tecplot]\n" \
-            "  -process: Post-process sampled lagrangian data and get radial profiles\n" \
-            "  -pdf:     Get droplete droplet size PDF and volume PDF for sampled planes\n" \
-            "  -help:    Print this message"
-    if "-help" in sys.argv:
-        print(help)
-        sys.exit()
-    
-    if "-process" in sys.argv:
-        flagProcess = True
-    else:
-        flagProcess = False
+    parser.add_argument('--process',
+                        help='Post-process sampled lagrangian data and get radial profiles',
+                        action="store_true"
+                        )
 
-    if "-pdf" in sys.argv:
-        flagPdf = True
-    else:
-        flagPdf = False
-    
+    parser.add_argument('--diameter',
+                        type=float,
+                        help='Reference diamter or length for the case (mm)',
+                        required=True
+                        )
+
+    parser.add_argument('--pdf',
+                        help='Get droplete droplet size PDF and volume PDF for sampled planes',
+                        action="store_true"
+                        )
+
+    parser.add_argument('--csv',
+                        help='Output in csv format',
+                        action="store_true"
+                        )
+
+    parser.add_argument('--tecplot',
+                        help='Output in Tecplot ascii format',
+                        action="store_true"
+                        )
+
+    return(parser.parse_args())
+
+if __name__ == '__main__':
+
+    args = getArgs()
+    flagProcess = args.process
+    flagPdf = args.pdf
+
     if (not flagProcess) and (not flagPdf):
         print(" It seems that you didn't give me any flags\n")
-        print(help)
         sys.exit()
 
 
@@ -320,5 +348,3 @@ def main():
 
         print("Done post-processing: ",plane)
 
-if __name__ == '__main__':
-    main()
