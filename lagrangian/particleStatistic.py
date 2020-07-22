@@ -180,13 +180,13 @@ def process(plane, variables, data):
                     UaGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*p[ind_Ux]
                     UrGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*(
                             # See issue #1 for more information
-                            (p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/r
+                            (p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/(r/1000)
                             )
                     mGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)
                     nParticle[dGroupLoc] += p[ind_nP]
                 UaGroup[-1] +=  p[ind_nP]*np.power(p[ind_d],3.0)*p[ind_Ux]
                 UrGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)*(
-                            (p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/r
+                            (p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/(r/1000)
                             )
                 mGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)
                 nParticle[-1] += p[ind_nP]
