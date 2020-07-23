@@ -62,6 +62,11 @@ def cylinder(x1,x2,Ux1,Ux2):
     theta = np.arctan2(x2,x1)
     Ur = Ux1*np.cos(theta)+Ux2*np.sin(theta)
 
+def radialVel(x,U,norm,r):
+    res = np.ones(3)-norm
+    Ur = (x[0]*res[0]*U[0]+x[1]*res[1]*U[1]+x[2]*res[2]*U[2])/(r/1000)
+    return Ur
+
 
 def readData(file):
 
@@ -140,6 +145,8 @@ def process(plane, variables, data):
     d_ref = args.diameter
     flagCsv = args.csv
     flagTec = args.tecplot
+    norm = np.array([int(args.norm[0]),int(args.norm[1]),int(args.norm[2])])
+    one = np.ones(3)
 
     indx = variables.index("Px")
     indy = variables.index("Py")
@@ -176,7 +183,11 @@ def process(plane, variables, data):
  
  
         for p in data: # p means particle
-            r = np.sqrt(p[indy]**2+p[indz]**2)*1000
+            # get radius in milimeter
+            res = one-norm
+            r = np.sqrt(
+                    (p[indx]*res[0])**2+(p[indy]*res[1])**2+(p[indz]*res[2])**2
+                    )*1000
             if (r >= r1 and r <= r2):
  
                 d1 += p[ind_nP]*p[ind_d]
@@ -185,13 +196,19 @@ def process(plane, variables, data):
 
                 dGroupLoc = loc(dGroup, p[ind_d]*np.power(10,6))
                 if (dGroupLoc != -1):
-                    UaGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*p[ind_Ux]
+                    # get axial velocity
+                    UaGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*(
+                            p[ind_Ux]*norm[0]+p[ind_Ux+1]*norm[1]+p[ind_Ux+2]*norm[2]
+                            )
+                    # get radial velocity
                     UrGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*(
                             # See issue #1 for more information
-                            (p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/(r/1000)
+                            #(p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/(r/1000)
+                            radialVel(p[indx:indx+3],p[ind_Ux:ind_Ux+3],norm,r)
                             )
                     mGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)
                     nParticle[dGroupLoc] += p[ind_nP]
+                # global average
                 UaGroup[-1] +=  p[ind_nP]*np.power(p[ind_d],3.0)*p[ind_Ux]
                 UrGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)*(
                             (p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/(r/1000)
@@ -291,6 +308,14 @@ def getArgs():
                         type=float,
                         help='Reference diamter or length for the case (mm)',
                         required=True
+                        )
+
+    parser.add_argument('--norm',
+                        type=str,
+                        default='100',
+                        choices=['100','010','001'],
+                        help='Normal direction of the plane (default: %(default)s)',
+                        required=False
                         )
 
     parser.add_argument('--pdf',
