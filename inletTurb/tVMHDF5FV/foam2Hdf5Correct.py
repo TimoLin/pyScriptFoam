@@ -99,11 +99,17 @@ def main():
     meanU = np.arange(nPoints,dtype=float)
     meanUP2 = np.arange(nPoints,dtype=float)
 
+    meanU_Org = np.arange(nPoints,dtype=float)
+    meanUP2_Org = np.arange(nPoints,dtype=float)
+
     meanU_New = np.arange(nPoints,dtype=float)
     meanUP2_New = np.arange(nPoints,dtype=float)
 
     meanU[:] = 0.0
     meanUP2[:] = 0.0
+
+    meanU_Org[:] = 0.0
+    meanUP2_Org[:] = 0.0
 
     meanU_New[:] = 0.0
     meanUP2_New[:] = 0.0
@@ -138,8 +144,11 @@ def main():
 
         [uXVal, uYVal, uZVal] = readFunc(times[n])
 
+        meanU_Org = (meanU_Org*(nS-1)+uXVal)/nS
+        meanUP2_Org = (meanUP2_Org*(nS-1)+np.square(uXVal-meanU_Org))/nS
+
         if n < nInitial:
-            # calculate 'good' mean value
+            # calculate a 'good' initial mean value
             meanU = (meanU*(nS-1)+uXVal)/nS
             meanUP2 = (meanUP2*(nS-1)+np.square(uXVal-meanU))/nS
         else: 
@@ -155,7 +164,7 @@ def main():
             if n >= nInitial+nForce:
                 nN = n-(nInitial+nForce)+1
                 meanU_New = (meanU_New*(nN-1)+uXVal)/nN
-                meanUP2_New = (meanUP2*(nN-1)+np.square(uXVal-meanU_New))/nN
+                meanUP2_New = (meanUP2_New*(nN-1)+np.square(uXVal-meanU_New))/nN
                 
                 # start taking samples
                 nData = n-(nInitial+nForce)
@@ -170,8 +179,10 @@ def main():
     
     # Write profile compare files
     f = open('profile.csv','w')
-    f.write("r,U,Urms,U-Tail,Urms-Tail\n")
+    f.write("r,UOrg,UrmsOrg,U,Urms,U-Tail,Urms-Tail\n")
     rD = np.arange(50,dtype=float)
+    u1Org = np.arange(50,dtype=float)
+    u2Org = np.arange(50,dtype=float)
     u1 = np.arange(50,dtype=float)
     u2 = np.arange(50,dtype=float)
     uN1 = np.arange(50,dtype=float)
@@ -189,6 +200,8 @@ def main():
             r = points[i,1]**2.0+points[i,2]**2
             r = np.sqrt(r)
             if r >= rD[n]-0.0036/50 and r<=rD[n]+0.0036/50:
+                u1Org[n] += meanU_Org[i]
+                u2Org[n] += np.sqrt(meanUP2_Org[i])
                 u1[n] += meanU[i]
                 u2[n] += np.sqrt(meanUP2[i])
                 uN1[n] += meanU_New[i]
@@ -196,11 +209,13 @@ def main():
                 nP[n] += 1
     for n in range(50):
         if nP[n] > 0:
+            u1Org[n] /= nP[n]
+            u2Org[n] /= nP[n]
             u1[n] /= nP[n]
             u2[n] /= nP[n]
             uN1[n] /= nP[n]
             uN2[n] /= nP[n]
-        line = str(rD[n]/0.0072)+","+str(u1[n])+","+str(u2[n])+","+str(uN1[n])+","+str(uN2[n])+"\n"
+        line = str(rD[n]/0.0072)+","+str(u1Org[n])+","+str(u2Org[n])+","+str(u1[n])+","+str(u2[n])+","+str(uN1[n])+","+str(uN2[n])+"\n"
         f.write(line)
     f.close()
 
