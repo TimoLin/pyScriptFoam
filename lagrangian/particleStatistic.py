@@ -304,6 +304,13 @@ def getArgs():
                         action="store_true"
                         )
 
+    parser.add_argument('--time',
+                        type=str,
+                        default='0:',
+                        help='Time ranges',
+                        required=False
+                        )
+
     parser.add_argument('--diameter',
                         type=float,
                         help='Reference diamter or length for the case (mm)',
@@ -340,6 +347,15 @@ if __name__ == '__main__':
     args = getArgs()
     flagProcess = args.process
     flagPdf = args.pdf
+    [startTime, endTime] = args.time.split(":")
+    if endTime=='':
+        endTime=1.0e6
+    else:
+        endTime=float(endTime)
+    if startTime=='':
+        startTime=0.0
+    else:
+        startTime=float(startTime)
 
     if (not flagProcess) and (not flagPdf):
         print(" It seems that you didn't give me any flags\n")
@@ -355,7 +371,14 @@ if __name__ == '__main__':
         sys.exit()
 
     planes = os.listdir(cloud)
-    times = os.listdir(cloud+planes[0])
+    timeDirs = os.listdir(cloud+planes[0])
+
+    times = []
+    for time in timeDirs:
+        if isFloat(time):
+            if float(time) >= startTime and float(time) <= endTime:
+                times.append(time)
+
     
     for plane in planes:
         data = []
@@ -364,7 +387,7 @@ if __name__ == '__main__':
             fileName = cloud+'/'+plane+'/'+time+'/statistic.dat'
             var, subdata = readData(fileName)
             data.extend(subdata)
-            #print(time)
+            print(time)
 
         if (flagProcess):
             process(plane, var,data)
