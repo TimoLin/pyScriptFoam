@@ -64,7 +64,12 @@ optional arguments:
 python3 ~/github/pyScriptFoam/inletTurb/tVMHDF5FV/foam2Hdf5.py --precursor ./ --surface xD04 --nsamples 10001 --norm 100 --location 0 --filename test.hdf5
 ```
 **Note:**
-It's recommended to set `--nsamples` as **N+1** so that data at time `0` is also included.
+It's recommended to set `--nsamples` as **N+1** so that data at time `0` is also included.  
+
+Forced velocity profile correction method:  
+```sh
+python3 ~/github/pyScriptFoam/inletTurb/tVMHDF5FV/foam2Hdf5Correct.py --precursor ../ --surface xD04 --norm 100 --location 0.0 --filename test.hdf5 --nMean '2000,4000,20001'
+```
 
 ## Todo
 - [ ] `mpi` mode needs to be implemented.
