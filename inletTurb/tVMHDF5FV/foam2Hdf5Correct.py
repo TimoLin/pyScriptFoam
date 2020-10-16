@@ -1,3 +1,8 @@
+
+# Reference:
+#   Schlüter, J.U., Pitsch, H. and Moin, P., 2004. Large-eddy simulation inflow conditions for coupling with
+#   Reynolds-averaged flow solvers. AIAA journal, 42(3), pp.478-484.
+
 import os
 import numpy as np
 import h5py
@@ -27,14 +32,14 @@ def main():
                         help='The name of the surface that contains the data.',
                         required=True)
 
-    #parser.add_argument('--nsamples',
-                        #type=str,
-                        #help='The number of the sampled time data.',
-                        #required=True)
-    parser.add_argument('--nMean',
+    parser.add_argument('--nsamples',
                         type=str,
-                        help='Inital averaged data: nMean[0], Forcing profile data: nMean[1]. Sampling data: nMean[2]. eg: "2000,4000,4000"',
+                        help='The number of the sampled time data.',
                         required=True)
+    #parser.add_argument('--nMean',
+                        #type=str,
+                        #help='Inital averaged data: nMean[0], Forcing profile data: nMean[1]. Sampling data: nMean[2]. eg: "2000,4000,4000"',
+                        #required=True)
     parser.add_argument('--norm',
                         type=str,
                         help='Normal direction of the main surface patch.',
@@ -53,15 +58,16 @@ def main():
 
     precursorCaseDir = args.precursor
     surfaceName = args.surface
-    #nSamples = int(args.nsamples)
+    nSamples = int(args.nsamples)
+    nTimes = nSamples
 
-    nMean = args.nMean.split(",")
-    nInitial = int(nMean[0])
-    nForce = int(nMean[1])
-    nSamples = int(nMean[2])
+    #nMean = args.nMean.split(",")
+    #nInitial = int(nMean[0])
+    #nForce = int(nMean[1])
+    #nSamples = int(nMean[2])
 
     # Total time files to be read
-    nTimes = nInitial+nForce+nSamples
+    #nTimes = nInitial+nForce+nSamples
 
     fileName = args.filename
     normal = args.norm
@@ -96,20 +102,14 @@ def main():
 
 
 ##  Mean profile related arrays
-    meanU = np.arange(nPoints,dtype=float)
-    meanUP2 = np.arange(nPoints,dtype=float)
-
-    meanU_Org = np.arange(nPoints,dtype=float)
-    meanUP2_Org = np.arange(nPoints,dtype=float)
+    meanU_Db = np.arange(nPoints,dtype=float)
+    meanUP2_Db = np.arange(nPoints,dtype=float)
 
     meanU_New = np.arange(nPoints,dtype=float)
     meanUP2_New = np.arange(nPoints,dtype=float)
 
-    meanU[:] = 0.0
-    meanUP2[:] = 0.0
-
-    meanU_Org[:] = 0.0
-    meanUP2_Org[:] = 0.0
+    meanU_Db[:] = 0.0
+    meanUP2_Db[:] = 0.0
 
     meanU_New[:] = 0.0
     meanUP2_New[:] = 0.0
@@ -125,9 +125,9 @@ def main():
     
     dbFile.create_dataset("points",data=points)
 
-    dbFile.create_dataset("times", data=[float(times[i])-float(times[nInitial+nForce])
-                                                for i in range(nInitial+nForce,nTimes)])
-    
+    dbFile.create_dataset("times", data=[float(times[i])-float(times[0])
+                                                for i in range(times.size)])    
+
     velocity = dbFile.create_dataset("velocity",(nSamples,nPoints,3),
                                         dtype=np.float64)
 
@@ -137,40 +137,39 @@ def main():
 
     readFunc = read_structured_velocity_foamfile(dataDir, surfaceName)
     
+
+    print(" Taking average of ", len(times), 'samples')
     for n in range(len(times)):
-        if (  np.mod(n,int(len(times)/20)) ==0 ):
-            print(" Converted about "+ "{:.1f}".format(n/len(times)*100)+"%")            
         nS = n+1
 
         [uXVal, uYVal, uZVal] = readFunc(times[n])
 
-        meanU_Org = (meanU_Org*(nS-1)+uXVal)/nS
-        meanUP2_Org = (meanUP2_Org*(nS-1)+np.square(uXVal-meanU_Org))/nS
+        meanU_Db = (meanU_Db*(nS-1)+uXVal)/nS
+        meanUP2_Db = (meanUP2_Db*(nS-1)+np.square(uXVal-meanU_Db))/nS
+    
+    print(" Start forcing velocity profile")
 
-        if n < nInitial:
-            # calculate a 'good' initial mean value
-            meanU = (meanU*(nS-1)+uXVal)/nS
-            meanUP2 = (meanUP2*(nS-1)+np.square(uXVal-meanU))/nS
-        else: 
-            # start force velocity profile
-            for i in range(nPoints):
-                # r = sqrt(y^2+z^2)
-                r = np.sqrt(points[i,1]**2+points[i,2]**2)
-                u, rms = uProfile(r)
-                uXVal[i] = rms/(np.sqrt(meanUP2[i]))*(uXVal[i]-meanU[i])+u
-            meanU = (meanU*(nS-1)+uXVal)/nS
-            meanUP2 = (meanUP2*(nS-1)+np.square(uXVal-meanU))/nS
+    for n in range(len(times)):
 
-            if n >= nInitial+nForce:
-                nN = n-(nInitial+nForce)+1
-                meanU_New = (meanU_New*(nN-1)+uXVal)/nN
-                meanUP2_New = (meanUP2_New*(nN-1)+np.square(uXVal-meanU_New))/nN
+        if (  np.mod(n,int(len(times)/20)) ==0 ):
+            print(" Converted about "+ "{:.1f}".format(n/len(times)*100)+"%")            
+
+        nS = n+1
+        [uXVal, uYVal, uZVal] = readFunc(times[n])
+
+        # start forcing velocity profile
+        for i in range(nPoints):
+            # r = sqrt(y^2+z^2)
+            r = np.sqrt(points[i,1]**2+points[i,2]**2)
+            u, rms = uProfile(r)
+            uXVal[i] = rms/(np.sqrt(meanUP2_Db[i]))*(uXVal[i]-meanU_Db[i])+u
+
+        meanU_New = (meanU_New*(nS-1)+uXVal)/nS
+        meanUP2_New = (meanUP2_New*(nS-1)+np.square(uXVal-meanU_New))/nS
                 
-                # start taking samples
-                nData = n-(nInitial+nForce)
-                velocity[nData, :, 0] = uXVal
-                velocity[nData, :, 1] = uYVal
-                velocity[nData, :, 2] = uZVal 
+        velocity[n, :, 0] = uXVal
+        velocity[n, :, 1] = uYVal
+        velocity[n, :, 2] = uZVal 
 
     if rank == 0:
         print("Process 0 done, waiting for the others...")
@@ -178,18 +177,14 @@ def main():
     dbFile.close()
     
     # Write profile compare files
-    f = open('profile.csv','w')
-    f.write("r,UOrg,UrmsOrg,U,Urms,U-Tail,Urms-Tail\n")
+    f = open('profile-new.csv','w')
+    f.write("r,UOrg,UrmsOrg,U-Tail,Urms-Tail\n")
     rD = np.arange(50,dtype=float)
     u1Org = np.arange(50,dtype=float)
     u2Org = np.arange(50,dtype=float)
-    u1 = np.arange(50,dtype=float)
-    u2 = np.arange(50,dtype=float)
     uN1 = np.arange(50,dtype=float)
     uN2 = np.arange(50,dtype=float)
     nP = np.arange(50,dtype=float)
-    u1[:] = 0
-    u2[:] = 0
     uN1[:] = 0
     uN2[:] = 0
     nP[:] = 0
@@ -200,10 +195,8 @@ def main():
             r = points[i,1]**2.0+points[i,2]**2
             r = np.sqrt(r)
             if r >= rD[n]-0.0036/50 and r<=rD[n]+0.0036/50:
-                u1Org[n] += meanU_Org[i]
-                u2Org[n] += np.sqrt(meanUP2_Org[i])
-                u1[n] += meanU[i]
-                u2[n] += np.sqrt(meanUP2[i])
+                u1Org[n] += meanU_Db[i]
+                u2Org[n] += np.sqrt(meanUP2_Db[i])
                 uN1[n] += meanU_New[i]
                 uN2[n] += np.sqrt(meanUP2_New[i])
                 nP[n] += 1
@@ -211,11 +204,9 @@ def main():
         if nP[n] > 0:
             u1Org[n] /= nP[n]
             u2Org[n] /= nP[n]
-            u1[n] /= nP[n]
-            u2[n] /= nP[n]
             uN1[n] /= nP[n]
             uN2[n] /= nP[n]
-        line = str(rD[n]/0.0072)+","+str(u1Org[n])+","+str(u2Org[n])+","+str(u1[n])+","+str(u2[n])+","+str(uN1[n])+","+str(uN2[n])+"\n"
+        line = str(rD[n]/0.0072)+","+str(u1Org[n])+","+str(u2Org[n])+","+str(uN1[n])+","+str(uN2[n])+"\n"
         f.write(line)
     f.close()
 
