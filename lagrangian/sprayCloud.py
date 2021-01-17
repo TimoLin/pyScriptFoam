@@ -5,7 +5,7 @@
 import numpy as np
 import sys
 import os
-
+import argparse
 
 # Colored printing functions for strings that use universal ANSI escape sequences.
 # fail: bold red, pass: bold green, warn: bold yellow, 
@@ -424,19 +424,57 @@ def config_parser(config):
 
     return timesteps, direc, axial, radial
 
+def getArgs():
+    '''
+    Define the command-line arguments
+    '''
+    parser = argparse.ArgumentParser(
+                description = "Convert Lagrangian data to Tecplot format or do Post-Process\n"
+                )
+
+    parser.add_argument('--parallel',
+                        help = 'Process the decomposed OF solution data',
+                        action = "store_true"
+                        )
+
+    parser.add_argument('--latestTime',
+                        help = 'Only process the latestTime solution data',
+                        action = "store_true"
+                        )
+
+    parser.add_argument('--times',
+                        type = str,
+                        default = '0:',
+                        help = "Specify time ranges - eg, '0.01:0.02'",
+                        required = False
+                        )
+
+    parser.add_argument('--tecplot',
+                        help = 'Convert lagragian data into Tecplot format',
+                        action = "store_true"
+                        )
+
+    parser.add_argument('--post',
+                        help = 'Post-process the droplet data',
+                        action = "store_true"
+                        )
+
+    return(parser.parse_args())
 
 def main():
-    help = " Usage:\n" \
-        + "   python3 sprayCloud.py [-parallel] [-latestTime] [-post] [-help]\n" \
-        + "     Convert Lagrangian data to Tecplot format or do Post-Process\n"  \
-        + "     Arguments:\n" \
-        + "       -parallel:    process the parallel data\n" \
-        + "       -latestTime:  only process the latestTime solution\n" \
-        + "       -post:        post-process the droplet data\n" \
-        + "       -help:        print this message\n"
-    if '-help' in sys.argv:
-        print(help)
-        sys.exit()
+    
+    args = getArgs()
+
+    [startTime,endTime] = args.times.split(":")
+    if endTime == '':
+        endTime = 1e6
+    else:
+        endTime = float(endTime)
+    if startTime == '':
+        startTime = 0.0
+    else:
+        startTime = float(startTime)
+
 
     # Search the current directory for OpenFOAM case
     pwd = os.listdir()
@@ -445,7 +483,7 @@ def main():
         sys.exit()
     
     ## First check 'Are we handling parallel data?'
-    if '-parallel' in sys.argv:
+    if args.parallel:
         if 'processor1' in pwd:
             print(" We are parsing parallel data. Woopie!")
             # get parallel dirs
@@ -459,8 +497,8 @@ def main():
     else:
         proc_dir = ['./']
 
-    ## Second check 'Are we goint to post-process?'
-    if '-post' in sys.argv:
+    ## Second check 'Are we going to post-process?'
+    if args.post in sys.argv:
         # check 'postDict' path
         if 'postSpray' not in pwd:
             print(" Error: I can't find postSpray folder! :(")
@@ -474,6 +512,7 @@ def main():
                 config_file = 'postSpray/postDict'
                 post_time, direc, axial, radial = config_parser(config_file)
     
+    ## Parsing solution times
     runtime = []
     timelist = []
     proc_dir_list = os.listdir(proc_dir[0])
@@ -481,21 +520,21 @@ def main():
         if isFloat(_dir):
             if _dir != '0':
                 # don't parse the 0 dir
-                runtime.append(_dir)
-                timelist.append(float(_dir))
+                if float(_dir) >= startTime  and float(_dir) <= endTime:
+                    runtime.append(_dir)
+                    timelist.append(float(_dir))
     timelist.sort()
     
     if (runtime == []):
         print(" Error: It seems we don't have any solution data in this case!")
         if '-parallel' not in sys.argv:
             print(" Try using -parallel option.")
-        print(help)
         sys.exit()
 
     print(' There are '+str(len(timelist))+' timesteps solution! ')
     print('   Ranged from '+str(min(timelist))+' to '+str(max(timelist)))
     
-    if '-latestTime' in sys.argv:
+    if args.latestTime:
         # only the latest time solution will be processed
         for _time in runtime:
             if float(_time) == timelist[-1]:
@@ -518,7 +557,7 @@ def main():
         print(" ** Abort due to lack of runtime data ** ")
         sys.exit()
     else:
-        if '-post' in sys.argv:
+        if args.post:
             for _post_time in post_time:
                 if _post_time  not in runtime:
                     print(" Error: It seems Post-time:",_post_time," was not in your solutions! ")
@@ -538,16 +577,21 @@ def main():
         spray_dir.append(_time_spray)
     #print(spray_dir)
     
-    # create tecplt dir
-    if 'Tecplot' not in pwd:
-        os.mkdir('Tecplot')
 
-    if '-post' in sys.argv:
+    ## Post process
+    if args.post:
         # do post process
         readData(runtime, post_time, spray_dir, direc, axial, radial)
-    else:
+
+    ## Convert lagrangian data into Tecplot ascii format
+    if args.tecplot:
+        # create tecplt dir
+        if 'Tecplot' not in pwd:
+            os.mkdir('Tecplot')
         # write data to Tecplot format
         rwTecplot(runtime, spray_dir)
+
+    print(" Done!")
     
 
 if __name__ == '__main__':
