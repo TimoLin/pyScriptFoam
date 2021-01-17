@@ -30,7 +30,7 @@ class flamelet():
 
 def readFM(fname, fm):
     f = open(fname,'r')
-
+    print(fname)
     # no use header lines
     line = f.readline()
     while ('title' not in line):
@@ -59,6 +59,9 @@ def readFM(fname, fm):
 
     line = f.readline()
     n_grid = int(line.split()[2])
+
+    # When n_grid%5 == 0, error occurs
+    n_grid -= 1
     
     while ('body' not in line):
         line = f.readline()
@@ -89,7 +92,6 @@ def readFM(fname, fm):
             data.append(temp)
     fm.readData(data)
 
-
     # read species
     for n_s in range(n_species):
         # Variable name Temperature
@@ -104,6 +106,7 @@ def readFM(fname, fm):
                 data.append(temp)
         fm.readData(data)
     
+    n_grid += 1
     # end up here, don't need the rest part
     f.close()
 
