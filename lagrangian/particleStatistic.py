@@ -14,8 +14,6 @@ from particle_readers import *
 
 rStep = 0.5 #mm
 
-dGroup = [10,20,30,40,50]#um
-
 def writeScatter(plane, variables, data):
 
     indx = variables.index("Px")
@@ -247,6 +245,13 @@ def getArgs():
                         required=True
                         )
 
+    parser.add_argument('--sizeGroup',
+                        type=str,
+                        default='10,20,30,40,50',
+                        help='Diameter groups for conditioned properties',
+                        required=False,
+                        )
+
     parser.add_argument('--norm',
                         type=str,
                         default='100',
@@ -270,6 +275,7 @@ def getArgs():
                         action="store_true"
                         )
 
+
     return(parser.parse_args())
 
 if __name__ == '__main__':
@@ -277,6 +283,7 @@ if __name__ == '__main__':
     args = getArgs()
     flagProcess = args.process
     flagPdf = args.pdf
+
     [startTime, endTime] = args.time.split(":")
     if endTime=='':
         endTime=1.0e6
@@ -286,6 +293,12 @@ if __name__ == '__main__':
         startTime=0.0
     else:
         startTime=float(startTime)
+
+    global dGroup
+    dGroup = [int(d) for d in args.sizeGroup.split(',')]
+    dGroup.sort()
+    print(dGroup)
+
 
     if (not flagProcess) and (not flagPdf):
         print(" It seems that you didn't give me any flags\n")
