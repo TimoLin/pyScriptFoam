@@ -83,7 +83,7 @@ def process(plane, variables, data):
     ind_d = variables.index("d")
     ind_Ux = variables.index("Ux")
 
-    rData = radial(rStep,10.0) #mm
+    rData = radial(rStep,rMax) #mm
     
     d_Profile = []
     d32_Profile = []
@@ -137,9 +137,11 @@ def process(plane, variables, data):
                     mGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)
                     nParticle[dGroupLoc] += p[ind_nP]
                 # global average
-                UaGroup[-1] +=  p[ind_nP]*np.power(p[ind_d],3.0)*p[ind_Ux]
+                UaGroup[-1] +=  p[ind_nP]*np.power(p[ind_d],3.0)*(
+                            p[ind_Ux]*norm[0]+p[ind_Ux+1]*norm[1]+p[ind_Ux+2]*norm[2]
+                            )
                 UrGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)*(
-                            (p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/(r/1000)
+                            radialVel(p[indx:indx+3],p[ind_Ux:ind_Ux+3],norm,r)
                             )
                 mGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)
                 nParticle[-1] += p[ind_nP]
@@ -245,6 +247,12 @@ def getArgs():
                         required=True
                         )
 
+    parser.add_argument('--rMax',
+                        type=float,
+                        help='Max radial location of the spray data',
+                        required=True
+                        )
+
     parser.add_argument('--sizeGroup',
                         type=str,
                         default='10,20,30,40,50',
@@ -298,6 +306,9 @@ if __name__ == '__main__':
     dGroup = [int(d) for d in args.sizeGroup.split(',')]
     dGroup.sort()
     print(dGroup)
+
+    global rMax
+    rMax = args.rMax
 
 
     if (not flagProcess) and (not flagPdf):
