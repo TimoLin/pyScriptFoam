@@ -82,6 +82,7 @@ def process(plane, variables, data):
     ind_nP = variables.index("nParticle")
     ind_d = variables.index("d")
     ind_Ux = variables.index("Ux")
+    ind_T = variables.index("T")
 
     rData = radial(rStep,rMax) #mm
     
@@ -91,6 +92,8 @@ def process(plane, variables, data):
     Ua_Profile = []
     Ur_Profile = []
     nP_Profile = []
+
+    T_Profile = []
 
     for i in range(len(rData)):
         if i == 0:
@@ -108,7 +111,8 @@ def process(plane, variables, data):
         d1 = 0.0
         d2 = 0.0
         d3 = 0.0
- 
+        d7_3 = 0.0
+        Tp = 0.0
  
         for p in data: # p means particle
             # get radius in milimeter
@@ -121,6 +125,10 @@ def process(plane, variables, data):
                 d1 += p[ind_nP]*p[ind_d]
                 d2 += p[ind_nP]*np.power(p[ind_d],2.0)
                 d3 += p[ind_nP]*np.power(p[ind_d],3.0)
+
+                # Temperature average using 7/3 law
+                d7_3 += p[ind_nP]*np.power(p[ind_d],7.0/3.0)
+                Tp += p[ind_nP]*p[ind_T]*np.power(p[ind_d],7.0/3.0)
 
                 dGroupLoc = loc(dGroup, p[ind_d]*np.power(10,6))
                 if (dGroupLoc != -1):
@@ -149,9 +157,11 @@ def process(plane, variables, data):
         if nParticle[-1] > 0:
             mean_d10 = d1/nParticle[-1]
             mean_d32 = d3/d2
+            mean_Tp = Tp/d7_3
         else:
             mean_d10 = 0.0
             mean_d32 = 0.0
+            mean_Tp = 0.0
         for n in range(len(UaGroup)):
             if nParticle[n] >0:
                 UaGroup[n] /= mGroup[n]
@@ -166,14 +176,15 @@ def process(plane, variables, data):
         Ua_Profile.append(UaGroup)
         Ur_Profile.append(UrGroup)
         nP_Profile.append(nParticle)
+        T_Profile.append(mean_Tp)
 
     if flagCsv:
-        writeCSV(plane, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile)
+        writeCSV(plane, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile)
 
     if flagTec:
-        writeTecplot(plane, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile)
+        writeTecplot(plane, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile)
 
-def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile):
+def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile):
     f = open('./postProcessing/'+plane+'.csv','w')
     header = 'r/D,d,d32,'
     for d in dGroup:
@@ -184,7 +195,8 @@ def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Pr
     header += 'Ur-dall,'
     for d in dGroup:
         header += 'nP-d'+str(d)+','
-    header += 'nP-dall'
+    header += 'nP-dall,'
+    header += 'T'
 
     f.write(header+"\n")
 
@@ -192,7 +204,8 @@ def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Pr
         line = data2lineCSV([rData[n],d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
              + data2lineCSV(Ua_Profile[n]) \
              + data2lineCSV(Ur_Profile[n]) \
-             + data2lineCSV(nP_Profile[n])
+             + data2lineCSV(nP_Profile[n]) \
+             + data2lineCSV([T_Profile[n]])
         line = line[:-1]
         f.write(line+'\n')
     f.close()
@@ -209,7 +222,8 @@ def writeTecplot(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, n
     header += '"Ur",'
     for d in dGroup:
         header += '"nP'+str(d)+'",'
-    header += '"nP"'
+    header += '"nP,"'
+    header += '"T"'
 
     line = 'variables="r/D","d","d32",'+header+'\n'
     f.write(line)
@@ -219,7 +233,8 @@ def writeTecplot(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, n
         line = data2line([rData[n],d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
              + data2line(Ua_Profile[n]) \
              + data2line(Ur_Profile[n]) \
-             + data2line(nP_Profile[n])
+             + data2line(nP_Profile[n]) \
+             + data2line([T_Profile[n]])
         f.write(line+'\n')
     f.close()
 
