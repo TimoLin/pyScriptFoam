@@ -15,6 +15,15 @@ from particle_readers import *
 rStep = 0.5 #mm
 
 def writeScatter(plane, variables, data):
+    """Write scatter field in tecplot format
+    Arguments:
+        plane:     plane's name
+        variables: variables' list
+        data:      droplet data array 
+
+    Returns:
+        None
+    """
 
     indx = variables.index("Px")
     indy = variables.index("Py")
@@ -33,8 +42,16 @@ def writeScatter(plane, variables, data):
     return
 
 def dropletSizePDF(plane, variables, data):
+    """Calculate droplet PDF in the sampled plane
 
+    Arguments:
+        plane:     plane's name
+        variables: variables' list
+        data:      droplet data array 
 
+    Returns:
+        None
+    """
     ind_np = variables.index("nParticle")
     ind_d = variables.index("d")
     
@@ -56,7 +73,8 @@ def dropletSizePDF(plane, variables, data):
     # Normalize
     PSD /= np.sum(PSD)
     PDF /= np.sum(PDF)
-
+    
+    '''Tecplot format
     f = open('./postProcessing/'+plane+'-pdf.dat','w')
     line = 'Variables="d", "Counts PDF", "Volume PDF"\n'
     f.write(line)
@@ -64,9 +82,30 @@ def dropletSizePDF(plane, variables, data):
         line = str(dGroup[n])+"\t"+str(PSD[n])+"\t"+str(PDF[n])+"\n"
         f.write(line)
     f.close()
+    '''
+    # CSV format
+    f = open('./postProcessing/pdf-'+plane+'.csv','w')
+    line = 'd, Counts-PDF, Volume-PDF\n'
+    f.write(line)
+    for n in range(len(dGroup)):
+        line = str(dGroup[n])+","+str(PSD[n])+","+str(PDF[n])+"\n"
+        f.write(line)
+    f.close()
+
+    return
 
 
 def process(plane, variables, data):
+    """Process the sampling data
+
+    Arguments:
+        plane:     plane's name
+        variables: variables' list
+        data:      droplet data array 
+
+    Returns:
+        None
+    """
 
     args = getArgs()
 
@@ -184,7 +223,25 @@ def process(plane, variables, data):
     if flagTec:
         writeTecplot(plane, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile)
 
+    return
+
 def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile):
+    """Write the processed data in CSV format
+
+    Arguments:
+        plane:       plane's name 
+        rData:       radial locations
+        d_Profile:   D10 profiles
+        d32_Profile: D32 profiles
+        Ua_Profile:  Axial velocity profile
+        Ur_Profile:  Radial velocity profile
+        nP_Profile:  Droplets number profile
+        T_Profile:   Droplet temperature profile
+
+    Return:
+        None
+
+    """
     f = open('./postProcessing/'+plane+'.csv','w')
     header = 'r/D,d,d32,'
     for d in dGroup:
@@ -212,6 +269,22 @@ def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Pr
     
 
 def writeTecplot(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile):
+    """Write the processed data in Tecplot format
+
+    Arguments:
+        plane:       plane's name 
+        rData:       radial locations
+        d_Profile:   D10 profiles
+        d32_Profile: D32 profiles
+        Ua_Profile:  Axial velocity profile
+        Ur_Profile:  Radial velocity profile
+        nP_Profile:  Droplets number profile
+
+    Return:
+        None
+
+    """
+
     f = open('./postProcessing/'+plane+'.dat','w')
     header = ''
     for d in dGroup:
@@ -239,7 +312,12 @@ def writeTecplot(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, n
     f.close()
 
 def getArgs():
-    # Define the command-line arguments
+    """ Define the command-line arguments
+    Arguments:
+        None
+    Returns:
+        args: Commandline arguments
+    """
     parser = argparse.ArgumentParser(
                 description = "Post-Processing sampled Lagrangian data from CloudFunction:ParticleStatistic."
                 )
