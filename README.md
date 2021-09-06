@@ -5,7 +5,7 @@ My python scripts for OpenFOAM data post-processing.
 # Prerequisites
 ## Ubuntu
 ```shell
-sudo apt install python3 python3-pip
+sudo apt install python3 python3-pip cantera-python3
 sudo pip3 install numpy
 ```
 ## CentOS 7  
@@ -21,6 +21,7 @@ scl enable rh-python36 zsh
 # install numpy
 sudo pip install numpy
 ```
+[Install Cantera with Anaconda under CentOS](https://cantera.org/install/conda-install.html)
 
 # lagrangian  
 ## ~~postLagrangian.py~~
