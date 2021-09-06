@@ -13,6 +13,7 @@ class flamelet():
         self.name = []
         self.data = []
         self.nSpecies = 0
+        self.ha = []
         self.hs = []
     def readName(self, _name):
         self.name.append(_name)
@@ -24,6 +25,8 @@ class flamelet():
         self.P = _P
     def setHs(self, _hs):
         self.hs = _hs
+    def setHa(self, _ha):
+        self.ha = _ha
     def setNspecise(self, n):
         self.nSpecies = n
 
@@ -132,6 +135,7 @@ def calcHs(gas, fm):
         _hs.append(_ht[n]-_hf[n])
 
     fm.setHs(_hs)
+    fm.setHa(_ht)
 
 def outputFM(outdir,flamelet_name, fname, fm):
     f = open(flamelet_name, 'r')
@@ -141,6 +145,7 @@ def outputFM(outdir,flamelet_name, fname, fm):
     n_grid = len(fm.data[0])    
 
     ind = lines.index('trailer\n')
+
     lines.insert(ind,'SensibleEnthalpy [J/kg]\n')
     ind += 1
     nlines = int(n_grid/5)+1
@@ -153,6 +158,18 @@ def outputFM(outdir,flamelet_name, fname, fm):
             lines.insert(ind,line)
             ind += 1
             line = ''
+    lines.insert(ind,'TotEnthalpy [J/kg]\n')
+    ind+=1
+    nlines = int(n_grid/5)+1
+    line = ''
+    for n in range(n_grid):
+        line += '\t'+str(fm.ha[n])
+        if (n+1)%5==0 or n == n_grid-1:
+            line += '\n'
+            lines.insert(ind,line)
+            ind += 1
+            line = ''
+
 
     f = open(outdir+'/'+fname, 'w')
     f.writelines(lines)
