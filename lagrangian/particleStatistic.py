@@ -11,305 +11,9 @@ import sys
 import os
 
 from particle_readers import *
+from process import *
+from libs import *
 
-rStep = 0.5 #mm
-
-def writeScatter(plane, variables, data):
-    """Write scatter field in tecplot format
-    Arguments:
-        plane:     plane's name
-        variables: variables' list
-        data:      droplet data array 
-
-    Returns:
-        None
-    """
-
-    indx = variables.index("Px")
-    indy = variables.index("Py")
-    indz = variables.index("Pz")
-    ind_nP = variables.index("nParticle")
-    ind_d = variables.index("d")
-    ind_Ux = variables.index("Ux")
-
-    f = open('./postProcessing/'+plane+'-scatter.dat','w')
-    line = "Variables='x','y','z','d'\n"
-    f.write(line)
-    for p in data:
-        line = str(p[indx])+"\t"+str(p[indy])+'\t'+str(p[indz])+"\t"+str(p[ind_d])+"\n"
-        f.write(line)
-    f.close()
-    return
-
-def dropletSizePDF(plane, variables, data):
-    """Calculate droplet PDF in the sampled plane
-
-    Arguments:
-        plane:     plane's name
-        variables: variables' list
-        data:      droplet data array 
-
-    Returns:
-        None
-    """
-    ind_np = variables.index("nParticle")
-    ind_d = variables.index("d")
-    
-    # Will be adjusted for user defined parameters
-    dStep = 5
-    dGroup = list(range(0,85,5)) # in um
-
-    PSD = [0.0]*len(dGroup) # Particle size distributions, PSD or counts PDF
-    PDF = [0.0]*len(dGroup) # Volume probability density funciton
-
-    for p in data:
-        for n, d in enumerate(dGroup):
-            d1 = (d - dStep/2.0)/(10**6)
-            d2 = (d + dStep/2.0)/(10**6)
-            if (p[ind_d] >= d1) and (p[ind_d] < d2):
-                PSD[n] += p[ind_np]
-                PDF[n] += p[ind_d]**3.0 * p[ind_np]
-
-    # Normalize
-    PSD /= np.sum(PSD)
-    PDF /= np.sum(PDF)
-    
-    '''Tecplot format
-    f = open('./postProcessing/'+plane+'-pdf.dat','w')
-    line = 'Variables="d", "Counts PDF", "Volume PDF"\n'
-    f.write(line)
-    for n in range(len(dGroup)):
-        line = str(dGroup[n])+"\t"+str(PSD[n])+"\t"+str(PDF[n])+"\n"
-        f.write(line)
-    f.close()
-    '''
-    # CSV format
-    f = open('./postProcessing/pdf-'+plane+'.csv','w')
-    line = 'd, Counts-PDF, Volume-PDF\n'
-    f.write(line)
-    for n in range(len(dGroup)):
-        line = str(dGroup[n])+","+str(PSD[n])+","+str(PDF[n])+"\n"
-        f.write(line)
-    f.close()
-
-    return
-
-
-def process(plane, variables, data):
-    """Process the sampling data
-
-    Arguments:
-        plane:     plane's name
-        variables: variables' list
-        data:      droplet data array 
-
-    Returns:
-        None
-    """
-
-    args = getArgs()
-
-    d_ref = args.diameter
-    flagCsv = args.csv
-    flagTec = args.tecplot
-    norm = np.array([int(args.norm[0]),int(args.norm[1]),int(args.norm[2])])
-    one = np.ones(3)
-
-    indx = variables.index("Px")
-    indy = variables.index("Py")
-    indz = variables.index("Pz")
-    ind_nP = variables.index("nParticle")
-    ind_d = variables.index("d")
-    ind_Ux = variables.index("Ux")
-    ind_T = variables.index("T")
-
-    rData = radial(rStep,rMax) #mm
-    
-    d_Profile = []
-    d32_Profile = []
-
-    Ua_Profile = []
-    Ur_Profile = []
-    nP_Profile = []
-
-    T_Profile = []
-
-    for i in range(len(rData)):
-        if i == 0:
-            r1 = 0
-            r2 = rStep/2.0
-        else:
-            r1 = rData[i]-rStep/2.0 ## lower bound
-            r2 = rData[i]+rStep/2.0 ## upper bound
-
-        UaGroup = [0.0]*(len(dGroup)+1) # +1 for global average
-        UrGroup = [0.0]*(len(dGroup)+1)
-        mGroup = [0.0]*(len(dGroup)+1)
-        nParticle = [0.0]*(len(dGroup)+1)
-
-        d1 = 0.0
-        d2 = 0.0
-        d3 = 0.0
-        d7_3 = 0.0
-        Tp = 0.0
- 
-        for p in data: # p means particle
-            # get radius in milimeter
-            res = one-norm
-            r = np.sqrt(
-                    (p[indx]*res[0])**2+(p[indy]*res[1])**2+(p[indz]*res[2])**2
-                    )*1000
-            if (r >= r1 and r <= r2):
- 
-                d1 += p[ind_nP]*p[ind_d]
-                d2 += p[ind_nP]*np.power(p[ind_d],2.0)
-                d3 += p[ind_nP]*np.power(p[ind_d],3.0)
-
-                # Temperature average using 7/3 law
-                d7_3 += p[ind_nP]*np.power(p[ind_d],7.0/3.0)
-                Tp += p[ind_nP]*p[ind_T]*np.power(p[ind_d],7.0/3.0)
-
-                dGroupLoc = loc(dGroup, p[ind_d]*np.power(10,6))
-                if (dGroupLoc != -1):
-                    # get axial velocity
-                    UaGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*(
-                            p[ind_Ux]*norm[0]+p[ind_Ux+1]*norm[1]+p[ind_Ux+2]*norm[2]
-                            )
-                    # get radial velocity
-                    UrGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)*(
-                            # See issue #1 for more information
-                            #(p[ind_Ux+1]*p[indy]+p[ind_Ux+2]*p[indz])/(r/1000)
-                            radialVel(p[indx:indx+3],p[ind_Ux:ind_Ux+3],norm,r)
-                            )
-                    mGroup[dGroupLoc] += p[ind_nP]*np.power(p[ind_d],3.0)
-                    nParticle[dGroupLoc] += p[ind_nP]
-                # global average
-                UaGroup[-1] +=  p[ind_nP]*np.power(p[ind_d],3.0)*(
-                            p[ind_Ux]*norm[0]+p[ind_Ux+1]*norm[1]+p[ind_Ux+2]*norm[2]
-                            )
-                UrGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)*(
-                            radialVel(p[indx:indx+3],p[ind_Ux:ind_Ux+3],norm,r)
-                            )
-                mGroup[-1] += p[ind_nP]*np.power(p[ind_d],3.0)
-                nParticle[-1] += p[ind_nP]
- 
-        if nParticle[-1] > 0:
-            mean_d10 = d1/nParticle[-1]
-            mean_d32 = d3/d2
-            mean_Tp = Tp/d7_3
-        else:
-            mean_d10 = 0.0
-            mean_d32 = 0.0
-            mean_Tp = 0.0
-        for n in range(len(UaGroup)):
-            if nParticle[n] >0:
-                UaGroup[n] /= mGroup[n]
-                UrGroup[n] /= mGroup[n]
-            else:
-                UaGroup[n] = 0.0
-                UrGroup[n] = 0.0
-
-
-        d_Profile.append(mean_d10)
-        d32_Profile.append(mean_d32)
-        Ua_Profile.append(UaGroup)
-        Ur_Profile.append(UrGroup)
-        nP_Profile.append(nParticle)
-        T_Profile.append(mean_Tp)
-
-    if flagCsv:
-        writeCSV(plane, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile)
-
-    if flagTec:
-        writeTecplot(plane, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile)
-
-    return
-
-def writeCSV(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile):
-    """Write the processed data in CSV format
-
-    Arguments:
-        plane:       plane's name 
-        rData:       radial locations
-        d_Profile:   D10 profiles
-        d32_Profile: D32 profiles
-        Ua_Profile:  Axial velocity profile
-        Ur_Profile:  Radial velocity profile
-        nP_Profile:  Droplets number profile
-        T_Profile:   Droplet temperature profile
-
-    Return:
-        None
-
-    """
-    f = open('./postProcessing/'+plane+'.csv','w')
-    header = 'r/D,d,d32,'
-    for d in dGroup:
-        header += 'Ua-d'+str(d)+','
-    header += 'Ua-dall,'
-    for d in dGroup:
-        header += 'Ur-d'+str(d)+','
-    header += 'Ur-dall,'
-    for d in dGroup:
-        header += 'nP-d'+str(d)+','
-    header += 'nP-dall,'
-    header += 'T'
-
-    f.write(header+"\n")
-
-    for n in range(len(rData)):
-        line = data2lineCSV([rData[n],d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
-             + data2lineCSV(Ua_Profile[n]) \
-             + data2lineCSV(Ur_Profile[n]) \
-             + data2lineCSV(nP_Profile[n]) \
-             + data2lineCSV([T_Profile[n]])
-        line = line[:-1]
-        f.write(line+'\n')
-    f.close()
-    
-
-def writeTecplot(plane, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile):
-    """Write the processed data in Tecplot format
-
-    Arguments:
-        plane:       plane's name 
-        rData:       radial locations
-        d_Profile:   D10 profiles
-        d32_Profile: D32 profiles
-        Ua_Profile:  Axial velocity profile
-        Ur_Profile:  Radial velocity profile
-        nP_Profile:  Droplets number profile
-
-    Return:
-        None
-
-    """
-
-    f = open('./postProcessing/'+plane+'.dat','w')
-    header = ''
-    for d in dGroup:
-        header += '"Ua'+str(d)+'",'
-    header += '"Ua",'
-    for d in dGroup:
-        header += '"Ur'+str(d)+'",'
-    header += '"Ur",'
-    for d in dGroup:
-        header += '"nP'+str(d)+'",'
-    header += '"nP,"'
-    header += '"T"'
-
-    line = 'variables="r/D","d","d32",'+header+'\n'
-    f.write(line)
-    line = 'zone t="'+plane+'"\n'
-    f.write(line)
-    for n in range(len(rData)):
-        line = data2line([rData[n],d_Profile[n]*np.power(10,6),d32_Profile[n]*np.power(10,6)]) \
-             + data2line(Ua_Profile[n]) \
-             + data2line(Ur_Profile[n]) \
-             + data2line(nP_Profile[n]) \
-             + data2line([T_Profile[n]])
-        f.write(line+'\n')
-    f.close()
 
 def getArgs():
     """ Define the command-line arguments
@@ -336,21 +40,28 @@ def getArgs():
 
     parser.add_argument('--diameter',
                         type=float,
-                        help='Reference diamter or length for the case (mm)',
+                        help='Normalized Reference diamter or length for the case (mm)',
                         required=True
                         )
 
     parser.add_argument('--rMax',
                         type=float,
-                        help='Max radial location of the spray data',
+                        help='Max radial location of the spray data (mm)',
                         required=True
                         )
 
     parser.add_argument('--sizeGroup',
                         type=str,
                         default='10,20,30,40,50',
-                        help='Diameter groups for conditioned properties',
+                        help='Diameter groups for conditioned properties (um)',
                         required=False,
+                        )
+
+    parser.add_argument('--origin',
+                        type=str,
+                        default='0,0,0',
+                        help="Co-ordinate of the injector's center",
+                        required=False
                         )
 
     parser.add_argument('--norm',
@@ -375,7 +86,6 @@ def getArgs():
                         help='Output in Tecplot ascii format',
                         action="store_true"
                         )
-
 
     return(parser.parse_args())
 
@@ -437,7 +147,8 @@ if __name__ == '__main__':
             print(time)
 
         if (flagProcess):
-            process(plane, var,data)
+            #process(args, plane, var, data)
+            processLine(args, plane, var, data)
         if (flagPdf):
             dropletSizePDF(plane, var, data)
 
