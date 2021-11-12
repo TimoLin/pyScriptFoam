@@ -147,8 +147,8 @@ if __name__ == '__main__':
             print(time)
 
         if (flagProcess):
-            #process(args, plane, var, data)
-            processLine(args, plane, var, data)
+            process(args, plane, var, data)
+            #processLine(args, plane, var, data)
         if (flagPdf):
             dropletSizePDF(plane, var, data)
 
