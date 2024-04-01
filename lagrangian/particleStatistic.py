@@ -87,6 +87,11 @@ def getArgs():
                         action="store_true"
                         )
 
+    parser.add_argument('--merge',
+                        help='Merge sampled data for each plane',
+                        action="store_true"
+                        )
+
     return(parser.parse_args())
 
 if __name__ == '__main__':
@@ -94,6 +99,7 @@ if __name__ == '__main__':
     args = getArgs()
     flagProcess = args.process
     flagPdf = args.pdf
+    flagMerge = args.merge
 
     [startTime, endTime] = args.time.split(":")
     if endTime=='':
@@ -114,7 +120,7 @@ if __name__ == '__main__':
     rMax = args.rMax
 
 
-    if (not flagProcess) and (not flagPdf):
+    if (not flagProcess) and (not flagPdf) and (not flagMerge):
         print(" It seems that you didn't give me any flags\n")
         sys.exit()
 
@@ -151,6 +157,9 @@ if __name__ == '__main__':
             #processLine(args, plane, var, data)
         if (flagPdf):
             dropletSizePDF(plane, var, data)
+        if (flagMerge):
+            mergeData(plane, var, data)
+
 
         print("Done post-processing: ",plane)
 

@@ -303,3 +303,24 @@ def processLine(args, plane,variables,data):
         writeTecplot(plane, dGroup, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile)
 
     return
+
+def mergeData( plane, variables, data):
+    '''Merge sampled droplet data to one file
+    '''
+    data = np.array(data)
+    indx = variables.index("Px")
+    indy = variables.index("Py")
+    indz = variables.index("Pz")
+    ind_nP = variables.index("nParticle")
+    ind_d = variables.index("d")
+    ind_Ux = variables.index("Ux")
+    ind_T = variables.index("T")
+
+    planeData = data[:,[indx,indy,indz,ind_d,ind_Ux,ind_Ux+1,ind_Ux+2,ind_T,ind_nP]]
+
+    header = "x,y,z,D,Ux,Uy,Uz,T,nParticles"
+
+    fName = './postProcessing/'+plane+'-droplet.csv'
+    
+    np.savetxt(fName, planeData, header=header, delimiter=",", comments="")
+
