@@ -4,13 +4,14 @@ from particle_readers import *
 from libs import *
 
 rStep = 0.5 # mm
-def process(args, plane, variables, data):
+def process(args, plane, variables, data, period):
     """Process the sampling data
 
     Arguments:
         plane:     plane's name
         variables: variables' list
         data:      droplet data array 
+        period:    liquid phase statistical time period
 
     Returns:
         None
@@ -25,7 +26,6 @@ def process(args, plane, variables, data):
     flagTec = args.tecplot
     # Axial origin of the sampling data
     origin = np.array([float(args.origin.split(",")[0]),float(args.origin.split(",")[1]),float(args.origin.split(",")[2])])
-    print(origin)
     # Normal direction of the sampling plane
     norm = np.array([int(args.norm[0]),int(args.norm[1]),int(args.norm[2])])
 
@@ -54,6 +54,8 @@ def process(args, plane, variables, data):
 
     T_Profile = []
 
+    volFlux_Profile = []
+
     for i in range(len(rData)):
         if i == 0:
             r1 = 0
@@ -72,6 +74,9 @@ def process(args, plane, variables, data):
         d3 = 0.0
         d7_3 = 0.0
         Tp = 0.0
+
+        # Calculate area of the ring and convert mm^2 to m^2
+        A = np.pi*(r2**2-r1**2)*1E-6
  
         for p in data: # p means particle
             # get radius in milimeter
@@ -123,10 +128,12 @@ def process(args, plane, variables, data):
             mean_d10 = d1/nParticle[-1]
             mean_d32 = d3/d2
             mean_Tp = Tp/d7_3
+            mean_VolFlux = np.pi*d3/A/6.0/period
         else:
             mean_d10 = 0.0
             mean_d32 = 0.0
             mean_Tp = 0.0
+            mean_VolFlux = 0.0
         for n in range(len(UaGroup)):
             if nParticle[n] >0:
                 UaGroup[n] /= mGroup[n]
@@ -142,12 +149,13 @@ def process(args, plane, variables, data):
         Ur_Profile.append(UrGroup)
         nP_Profile.append(nParticle)
         T_Profile.append(mean_Tp)
+        volFlux_Profile.append(mean_VolFlux)
 
     if flagCsv:
-        writeCSV(plane, dGroup, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile)
+        writeCSV(plane, dGroup, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile, volFlux_Profile)
 
     if flagTec:
-        writeTecplot(plane, dGroup, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile)
+        writeTecplot(plane, dGroup, rData/d_ref, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile, volFlux_Profile)
 
     return
 

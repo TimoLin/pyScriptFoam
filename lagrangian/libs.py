@@ -86,7 +86,7 @@ def dropletSizePDF(plane, variables, data):
 
     return
 
-def writeCSV(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile):
+def writeCSV(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile, volFlux_Profile):
     """Write the processed data in CSV format
 
     Arguments:
@@ -98,6 +98,7 @@ def writeCSV(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profil
         Ur_Profile:  Radial velocity profile
         nP_Profile:  Droplets number profile
         T_Profile:   Droplet temperature profile
+        volFlux_Profile: Volume flux profile
 
     Return:
         None
@@ -114,7 +115,8 @@ def writeCSV(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profil
     for d in dGroup:
         header += 'nP-d'+str(d)+','
     header += 'nP-dall,'
-    header += 'T'
+    header += 'T,'
+    header += "VolFlux"
 
     f.write(header+"\n")
 
@@ -123,13 +125,14 @@ def writeCSV(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profil
              + data2lineCSV(Ua_Profile[n]) \
              + data2lineCSV(Ur_Profile[n]) \
              + data2lineCSV(nP_Profile[n]) \
-             + data2lineCSV([T_Profile[n]])
+             + data2lineCSV([T_Profile[n]])\
+             + data2lineCSV([volFlux_Profile[n]])
         line = line[:-1]
         f.write(line+'\n')
     f.close()
     
 
-def writeTecplot(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile):
+def writeTecplot(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Profile, nP_Profile, T_Profile, volFlux_Profile):
     """Write the processed data in Tecplot format
 
     Arguments:
@@ -141,6 +144,7 @@ def writeTecplot(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Pr
         Ur_Profile:  Radial velocity profile
         nP_Profile:  Droplets number profile
         T_Profile:   Droplet temperature profile
+        volFlux_Profile: Volume flux profile
 
     Return:
         None
@@ -158,7 +162,8 @@ def writeTecplot(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Pr
     for d in dGroup:
         header += '"nP'+str(d)+'",'
     header += '"nP,"'
-    header += '"T"'
+    header += '"T",'
+    header += "VolFlux"
 
     line = 'variables="r/D","d","d32",'+header+'\n'
     f.write(line)
@@ -169,7 +174,8 @@ def writeTecplot(plane, dGroup, rData, d_Profile, d32_Profile, Ua_Profile, Ur_Pr
              + data2line(Ua_Profile[n]) \
              + data2line(Ur_Profile[n]) \
              + data2line(nP_Profile[n]) \
-             + data2line([T_Profile[n]])
+             + data2line([T_Profile[n]])\
+             + data2line([volFlux_Profile[n]])
         f.write(line+'\n')
     f.close()
 

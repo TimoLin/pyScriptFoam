@@ -114,7 +114,7 @@ if __name__ == '__main__':
     global dGroup
     dGroup = [int(d) for d in args.sizeGroup.split(',')]
     dGroup.sort()
-    print(dGroup)
+    print(" Diameter group: ",dGroup)
 
     global rMax
     rMax = args.rMax
@@ -123,7 +123,6 @@ if __name__ == '__main__':
     if (not flagProcess) and (not flagPdf) and (not flagMerge):
         print(" It seems that you didn't give me any flags\n")
         sys.exit()
-
 
     pwd = os.listdir()
 
@@ -141,25 +140,29 @@ if __name__ == '__main__':
         if isFloat(time):
             if float(time) >= startTime and float(time) <= endTime:
                 times.append(time)
-
+    
+    # Calculate the statistical time period
+    timeList = [float(time) for time in times]
+    period = (max(timeList)-min(timeList))/(len(times)-1)*len(times)
+    print(" Time range: {0} ~ {1}s".format(min(timeList),max(timeList)))
+    print(" Statistical period: {0}s".format(period))
     
     for plane in planes:
+        print("Processing plane: {0} ...".format(plane) )
         data = []
         # gather particles in the sampled plane
         for time in times:
             fileName = cloud+'/'+plane+'/'+time+'/statistic.dat'
             var, subdata = readData(fileName)
             data.extend(subdata)
-            print(time)
+        print("  Parcels: {0:.1f}k".format(len(data)/1000))
 
         if (flagProcess):
-            process(args, plane, var, data)
+            process(args, plane, var, data, period)
             #processLine(args, plane, var, data)
         if (flagPdf):
             dropletSizePDF(plane, var, data)
         if (flagMerge):
             mergeData(plane, var, data)
 
-
-        print("Done post-processing: ",plane)
 
