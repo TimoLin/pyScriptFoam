@@ -155,7 +155,10 @@ if __name__ == '__main__':
             fileName = cloud+'/'+plane+'/'+time+'/statistic.dat'
             var, subdata = readData(fileName)
             data.extend(subdata)
-        print("  Parcels: {0:.1f}k".format(len(data)/1000))
+
+        ind_nP = var.index("nParticle")
+
+        print("  Parcels: {0:.1f}k, Particles: {1:.1f}k ..".format(len(data)/1000, sum([d[ind_nP] for d in data])/1000))
 
         if (flagProcess):
             process(args, plane, var, data, period)
