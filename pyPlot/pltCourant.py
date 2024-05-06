@@ -28,6 +28,12 @@ for n, line in enumerate(lines):
     if 'Time =' == line[0:6]:
         time.append(float(line.split()[-1]))
 
+# Let the length of time and Co be the same
+if len(co) < len(time):
+    time = time[0:len(co)]
+else:
+    co = co[0:len(time)]
+
 plt.plot(time, co, 'b')
 plt.xlabel("Time(s)")
 plt.ylabel("Max Courant No.")

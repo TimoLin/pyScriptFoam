@@ -20,7 +20,13 @@ def fileParser(fileName):
                 time.append(temp)
             if "Current number of parcels" in line:
                 temp = int(line.split()[-1])
-                parcels.append(temp)    
+                parcels.append(temp)
+    # Let the length of time and parcels be the same
+    if len(parcels) < len(time):
+        time = time[0:len(parcels)]
+    else:
+        parcels = parcels[0:len(time)]
+        
     return time, parcels
 
 def getArgs():
